@@ -1,0 +1,60 @@
+spring:
+  profiles:
+    include: secret
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+  sql:
+    init:
+      mode: always
+
+  cache:
+    jcache:
+      config: classpath:ehcache.xml
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            clientId: your-google-client-id
+            clientSecret: your-google-client-secret
+            scope: profile, email
+
+  datasource:
+    #    url: jdbc:h2:mem:topcasting;MODE=MySQL
+    url: jdbc:h2:tcp://localhost/~/project;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+    hibernate:
+      ddl-auto: create
+
+#logging:
+#  level:
+#    org:
+#      hibernate:
+#        SQL: debug
+#        type: trace
+
+delivery:
+  fee: 2500
+
+custom:
+  jwt:
+    secretKey: 12312312312312313231
+    refreshKey: 123123123123
+
+portone:
+  marketKey: imp87250713
+  restKey: 2713462621803482
+  secretKey: iGk3i8nJonvboPvJkfWhP0YOLqHVDgD1fTfcJXXtNA5okBseOpqBWILpw4QzSqM3leBPPUGFcZ6TB3iC
