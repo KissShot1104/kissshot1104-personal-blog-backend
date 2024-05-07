@@ -9,6 +9,7 @@ import static org.mockito.Mockito.lenient;
 import java.util.List;
 import java.util.Optional;
 import kissshot1104.personal.blog.category.dto.request.CreateCategoryRequest;
+import kissshot1104.personal.blog.category.dto.response.FindCategoryResponse;
 import kissshot1104.personal.blog.category.entity.Category;
 import kissshot1104.personal.blog.category.repository.CategoryRepository;
 import kissshot1104.personal.blog.category.service.CategoryService;
@@ -43,18 +44,21 @@ class CategoryServiceTest {
     @BeforeEach
     void setUp() {
         category1 = Category.builder()
+                .id(1L)
                 .category(null)
                 .categoryDepth(0L)
                 .categoryName("Test Category Name1")
                 .build();
 
         category2 = Category.builder()
-                .category(null)
-                .categoryDepth(0L)
+                .id(2L)
+                .category(category1)
+                .categoryDepth(1L)
                 .categoryName("Test Category Name2")
                 .build();
 
         category3 = Category.builder()
+                .id(3L)
                 .category(null)
                 .categoryDepth(0L)
                 .categoryName("Test Category Name3")
@@ -151,14 +155,15 @@ class CategoryServiceTest {
     }
 
     @Test
-    @DisplayName("모든 카테고리를 반환한다.")
+    @DisplayName("모든 카테고리를 조회한다.")
     public void findAllCategory() {
 
         given(categoryRepository.findAll())
                 .willReturn(List.of(category1, category2, category3));
 
-        List<Category> categoryList = categoryService.findAllCategory();
+        List<FindCategoryResponse> FindCategoryResponseList = categoryService.findAllCategory();
 
-        assertThat(categoryList.size()).isEqualTo(3);
+        assertThat(FindCategoryResponseList.size()).isEqualTo(2);
+        assertThat(FindCategoryResponseList.get(0)).isNotNull();
     }
 }
