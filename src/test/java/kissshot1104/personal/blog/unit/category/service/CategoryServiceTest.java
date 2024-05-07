@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
+import java.util.List;
 import java.util.Optional;
 import kissshot1104.personal.blog.category.dto.request.CreateCategoryRequest;
 import kissshot1104.personal.blog.category.entity.Category;
@@ -14,6 +15,7 @@ import kissshot1104.personal.blog.category.service.CategoryService;
 import kissshot1104.personal.blog.global.exception.BusinessException;
 import kissshot1104.personal.blog.global.exception.ErrorCode;
 import kissshot1104.personal.blog.member.entity.Member;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,9 +34,33 @@ class CategoryServiceTest {
     @InjectMocks
     private CategoryService categoryService;
 
-
     private Member member;
 
+    private Category category1;
+    private Category category2;
+    private Category category3;
+
+    @BeforeEach
+    void setUp() {
+        category1 = Category.builder()
+                .category(null)
+                .categoryDepth(0L)
+                .categoryName("Test Category Name1")
+                .build();
+
+        category2 = Category.builder()
+                .category(null)
+                .categoryDepth(0L)
+                .categoryName("Test Category Name2")
+                .build();
+
+        category3 = Category.builder()
+                .category(null)
+                .categoryDepth(0L)
+                .categoryName("Test Category Name3")
+                .build();
+        categoryRepository.saveAll(List.of(category1, category2, category3));
+    }
 
     @Test
     @DisplayName("부모 카테고리가 존재하지 않으면 예외가 발생한다.")
@@ -122,5 +148,17 @@ class CategoryServiceTest {
         assertThat(result)
                 .extracting("id", "category", "categoryName", "categoryDepth")
                 .contains(2L, parentCategory, "Test Child Category Name", 1L);
+    }
+
+    @Test
+    @DisplayName("모든 카테고리를 반환한다.")
+    public void findAllCategory() {
+
+        given(categoryRepository.findAll())
+                .willReturn(List.of(category1, category2, category3));
+
+        List<Category> categoryList = categoryService.findAllCategory();
+
+        assertThat(categoryList.size()).isEqualTo(3);
     }
 }
