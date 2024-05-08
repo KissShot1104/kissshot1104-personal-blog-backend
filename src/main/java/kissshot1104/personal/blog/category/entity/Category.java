@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import kissshot1104.personal.blog.category.dto.request.ModifyCategoryRequest;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,4 +33,14 @@ public class Category {
 
     @Column(nullable = false)
     private Long categoryDepth;
+
+    public void modifyCategory(final Category parentCategory,
+                               final String categoryName) {
+        this.category = parentCategory;
+        this.categoryName = categoryName;
+    }
+
+    public void modifyCategoryDepth(final Long categoryDepth) {
+        this.categoryDepth = categoryDepth;
+    }
 }
