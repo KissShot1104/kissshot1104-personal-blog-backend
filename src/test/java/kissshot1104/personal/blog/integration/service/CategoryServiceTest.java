@@ -3,11 +3,13 @@ package kissshot1104.personal.blog.integration.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
 
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Optional;
 import kissshot1104.personal.blog.category.dto.request.CreateCategoryRequest;
+import kissshot1104.personal.blog.category.dto.response.FindCategoryResponse;
 import kissshot1104.personal.blog.category.entity.Category;
 import kissshot1104.personal.blog.category.repository.CategoryRepository;
 import kissshot1104.personal.blog.category.service.CategoryService;
@@ -115,5 +117,14 @@ class CategoryServiceTest {
         assertThat(result)
                 .extracting("id", "category", "categoryName", "categoryDepth")
                 .contains(4L, category1, "Test Child Category Name", 1L);
+    }
+
+    @Test
+    @DisplayName("모든 카테고리를 조회한다.")
+    public void findAllCategoryTest() {
+        List<FindCategoryResponse> FindCategoryResponseList = categoryService.findAllCategory();
+
+        assertThat(FindCategoryResponseList.size()).isEqualTo(2);
+        assertThat(FindCategoryResponseList.get(0).childCategoryList()).isNotNull();
     }
 }
