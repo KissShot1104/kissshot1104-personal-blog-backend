@@ -2,6 +2,7 @@ package kissshot1104.personal.blog.unit.category.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.lenient;
 import java.util.List;
 import java.util.Optional;
 import kissshot1104.personal.blog.category.dto.request.CreateCategoryRequest;
+import kissshot1104.personal.blog.category.dto.request.ModifyCategoryRequest;
 import kissshot1104.personal.blog.category.dto.response.FindCategoryResponse;
 import kissshot1104.personal.blog.category.entity.Category;
 import kissshot1104.personal.blog.category.repository.CategoryRepository;
@@ -148,7 +150,8 @@ class CategoryServiceTest {
                 .build();
         given(categoryRepository.save(any())).willReturn(childCategory);
 
-        Category result = categoryService.createCategory(new CreateCategoryRequest(1L, "Test Child Category Name"), new Member());
+        Category result = categoryService.createCategory(new CreateCategoryRequest(1L, "Test Child Category Name"),
+                new Member());
         assertThat(result)
                 .extracting("id", "category", "categoryName", "categoryDepth")
                 .contains(2L, parentCategory, "Test Child Category Name", 1L);
@@ -166,4 +169,117 @@ class CategoryServiceTest {
         assertThat(FindCategoryResponseList.size()).isEqualTo(2);
         assertThat(FindCategoryResponseList.get(0)).isNotNull();
     }
+
+    @Test
+    @DisplayName("존재하지 않는 Category를 조회하면 예외가 발생한다.")
+    public void modifyCategoryEntityNotFoundException() {
+
+        //given
+        final ModifyCategoryRequest modifyCategoryRequest1 = ModifyCategoryRequest.builder()
+                .categoryId(9999L)
+                .categoryName("Test Modify Category Name1")
+                .parentCategoryId(null)
+                .build();
+
+        final List<ModifyCategoryRequest> modifyCategoryRequestList =
+                List.of(modifyCategoryRequest1);
+
+        given(categoryRepository.findById(9999L))
+                .willThrow(new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
+        //then
+        assertThatThrownBy(() -> categoryService.modifyCategory(modifyCategoryRequestList, member))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("지정한 Entity를 찾을 수 없습니다.");
+    }
+
+    @Test
+    @DisplayName("이름이 변한 모든 카테고리의 이름을 수정한다.")
+    public void modifyCategoryName() {
+
+        //given
+        final ModifyCategoryRequest modifyCategoryRequest1 = ModifyCategoryRequest.builder()
+                .categoryId(1L)
+                .categoryName("Test Modify Category Name1")
+                .parentCategoryId(null)
+                .build();
+
+        final ModifyCategoryRequest modifyCategoryRequest2 = ModifyCategoryRequest.builder()
+                .categoryId(2L)
+                .categoryName("Test Modify Category Name2")
+                .parentCategoryId(1L)
+                .build();
+
+        final ModifyCategoryRequest modifyCategoryRequest3 = ModifyCategoryRequest.builder()
+                .categoryId(3L)
+                .categoryName("Test Modify Category Name3")
+                .parentCategoryId(null)
+                .build();
+
+        final List<ModifyCategoryRequest> modifyCategoryRequestList =
+                List.of(modifyCategoryRequest1, modifyCategoryRequest2, modifyCategoryRequest3);
+
+        given(categoryRepository.findById(1L))
+                .willReturn(Optional.of(category1));
+        given(categoryRepository.findById(2L))
+                .willReturn(Optional.of(category2));
+        given(categoryRepository.findById(3L))
+                .willReturn(Optional.of(category3));
+        //when
+        categoryService.modifyCategory(modifyCategoryRequestList, member);
+
+        //then
+        assertThat(List.of(category1,category2, category3))
+                .extracting("id", "category", "categoryName", "categoryDepth")
+                .contains(
+                        tuple(1L, null, "Test Modify Category Name1", 0L),
+                        tuple(2L, category1, "Test Modify Category Name2", 1L),
+                        tuple(3L, null, "Test Modify Category Name3", 0L)
+                );
+    }
+
+    @Test
+    @DisplayName("이름이 변한 모든 카테고리의 부모카테고리와 깊이를 수정한다.")
+    public void modifyCategoryParentCategory() {
+
+        //given
+        final ModifyCategoryRequest modifyCategoryRequest1 = ModifyCategoryRequest.builder()
+                .categoryId(1L)
+                .categoryName("Test Modify Category Name1")
+                .parentCategoryId(null)
+                .build();
+
+        final ModifyCategoryRequest modifyCategoryRequest2 = ModifyCategoryRequest.builder()
+                .categoryId(2L)
+                .categoryName("Test Modify Category Name2")
+                .parentCategoryId(3L)
+                .build();
+
+        final ModifyCategoryRequest modifyCategoryRequest3 = ModifyCategoryRequest.builder()
+                .categoryId(3L)
+                .categoryName("Test Modify Category Name3")
+                .parentCategoryId(1L)
+                .build();
+
+        final List<ModifyCategoryRequest> modifyCategoryRequestList =
+                List.of(modifyCategoryRequest1, modifyCategoryRequest2, modifyCategoryRequest3);
+
+        given(categoryRepository.findById(1L))
+                .willReturn(Optional.of(category1));
+        given(categoryRepository.findById(2L))
+                .willReturn(Optional.of(category2));
+        given(categoryRepository.findById(3L))
+                .willReturn(Optional.of(category3));
+        //when
+        categoryService.modifyCategory(modifyCategoryRequestList, member);
+
+        //then
+        assertThat(List.of(category1,category2, category3))
+                .extracting("id", "category", "categoryName", "categoryDepth")
+                .contains(
+                        tuple(1L, null, "Test Modify Category Name1", 0L),
+                        tuple(2L, category3, "Test Modify Category Name2", 2L),
+                        tuple(3L, category1, "Test Modify Category Name3", 1L)
+                );
+    }
+
 }
