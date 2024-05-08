@@ -27,23 +27,3 @@ public record FindCategoryResponse(Long categoryId,
     }
 
 }
-
-
-//public class CategoryDTO {
-//    private Long id;
-//    private String categoryName;
-//    private List<CategoryDTO> children;
-//
-//    // Constructors, Getters and Setters
-//    public CategoryDTO(Long id, String categoryName) {
-//        this.id = id;
-//        this.categoryName = categoryName;
-//        this.children = new ArrayList<>();
-//    }
-//
-//    public void addChild(CategoryDTO child) {
-//        this.children.add(child);
-//    }
-//
-//    // standard getters and setters
-//}
