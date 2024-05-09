@@ -11,7 +11,6 @@ import static org.mockito.Mockito.verify;
 
 import java.util.List;
 import java.util.Optional;
-import kissshot1104.personal.blog.category.dto.request.CreateCategoryRequest;
 import kissshot1104.personal.blog.category.dto.request.ModifyCategoryRequest;
 import kissshot1104.personal.blog.category.dto.response.FindCategoryResponse;
 import kissshot1104.personal.blog.category.entity.Category;
@@ -84,7 +83,8 @@ class CategoryServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessage(ErrorCode.INVALID_INPUT_VALUE.getMessage());
     }
-//
+
+    //
 //    //todo 어떤 예외가 발생하는지 자세하게 알아보고 변경해야함
 //    @Test
 //    @DisplayName("카테고리 이름이 없다면 예외가 발생한다.")
@@ -225,7 +225,7 @@ class CategoryServiceTest {
         categoryService.saveCategoryChanges(modifyCategoryRequestList, member);
 
         //then
-        assertThat(List.of(category1,category2, category3))
+        assertThat(List.of(category1, category2, category3))
                 .extracting("id", "category", "categoryName", "categoryDepth")
                 .contains(
                         tuple(1L, null, "Test Modify Category Name1", 0L),
@@ -270,7 +270,7 @@ class CategoryServiceTest {
         categoryService.saveCategoryChanges(modifyCategoryRequestList, member);
 
         //then
-        assertThat(List.of(category1,category2, category3))
+        assertThat(List.of(category1, category2, category3))
                 .extracting("id", "category", "categoryName", "categoryDepth")
                 .contains(
                         tuple(1L, null, "Test Modify Category Name1", 0L),
@@ -308,7 +308,7 @@ class CategoryServiceTest {
         //when
         categoryService.saveCategoryChanges(modifyCategoryRequestList, member);
 
-        verify(categoryRepository,times(1)).findAllByIdNotIn(any());
+        verify(categoryRepository, times(1)).findAllByIdNotIn(any());
     }
 
 }
