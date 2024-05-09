@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.util.List;
 import java.util.Optional;
@@ -72,20 +74,18 @@ class CategoryServiceTest {
     @DisplayName("부모 카테고리가 존재하지 않으면 예외가 발생한다.")
     void createCategoryParentCategoryNotFoundException() {
 
-        final CreateCategoryRequest createCategoryRequest = CreateCategoryRequest.builder()
-                .parentCategoryId(999L)
-                .categoryName(null)
-                .build();
+        final ModifyCategoryRequest createCategoryRequest =
+                new ModifyCategoryRequest(null, "Test Parent Category Name", 9999L);
 
         given(categoryRepository.findById(any()))
                 .willThrow(new BusinessException(ErrorCode.INVALID_INPUT_VALUE));
 
-        assertThatThrownBy(() -> categoryService.createCategory(createCategoryRequest, member))
+        assertThatThrownBy(() -> categoryService.addCategory(createCategoryRequest))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage(ErrorCode.INVALID_INPUT_VALUE.getMessage());
     }
-
-    //todo 어떤 예외가 발생하는지 자세하게 알아보고 변경해야함
+//
+//    //todo 어떤 예외가 발생하는지 자세하게 알아보고 변경해야함
 //    @Test
 //    @DisplayName("카테고리 이름이 없다면 예외가 발생한다.")
 //    void createCategoryEmptyCategoryNameException() {
@@ -98,14 +98,12 @@ class CategoryServiceTest {
 //        assertThatThrownBy(() -> categoryService.createCategory(createCategoryRequest, member))
 //                .isInstanceOf(ConstraintViolationException.class);
 //    }
-
+//
     @Test
     @DisplayName("root 카테고리를 만든다.")
     void createRootCategory() {
-        final CreateCategoryRequest createCategoryRequest = CreateCategoryRequest.builder()
-                .parentCategoryId(null)
-                .categoryName("Test Category Name")
-                .build();
+        final ModifyCategoryRequest createCategoryRequest =
+                new ModifyCategoryRequest(null, "Test Parent Category Name", null);
 
         final Category parentCategory = Category.builder()
                 .id(1L)
@@ -117,7 +115,7 @@ class CategoryServiceTest {
         lenient().when(categoryRepository.findById(any())).thenReturn(Optional.of(parentCategory));
         given(categoryRepository.save(any())).willReturn(parentCategory);
 
-        assertThat(categoryService.createCategory(createCategoryRequest, member))
+        assertThat(categoryService.addCategory(createCategoryRequest))
                 .extracting("id",
                         "category",
                         "categoryName",
@@ -140,7 +138,7 @@ class CategoryServiceTest {
                 .categoryDepth(0L)
                 .build();
 
-        given(categoryRepository.findById(1L)).willReturn(Optional.of(parentCategory));
+        lenient().when(categoryRepository.findById(1L)).thenReturn(Optional.of(parentCategory));
 
         final Category childCategory = Category.builder()
                 .id(2L)
@@ -150,8 +148,7 @@ class CategoryServiceTest {
                 .build();
         given(categoryRepository.save(any())).willReturn(childCategory);
 
-        Category result = categoryService.createCategory(new CreateCategoryRequest(1L, "Test Child Category Name"),
-                new Member());
+        Category result = categoryService.addCategory(new ModifyCategoryRequest(null, "Test Child Category Name", 1L));
         assertThat(result)
                 .extracting("id", "category", "categoryName", "categoryDepth")
                 .contains(2L, parentCategory, "Test Child Category Name", 1L);
@@ -187,7 +184,7 @@ class CategoryServiceTest {
         given(categoryRepository.findById(9999L))
                 .willThrow(new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
         //then
-        assertThatThrownBy(() -> categoryService.modifyCategory(modifyCategoryRequestList, member))
+        assertThatThrownBy(() -> categoryService.saveCategoryChanges(modifyCategoryRequestList, member))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("지정한 Entity를 찾을 수 없습니다.");
     }
@@ -225,7 +222,7 @@ class CategoryServiceTest {
         given(categoryRepository.findById(3L))
                 .willReturn(Optional.of(category3));
         //when
-        categoryService.modifyCategory(modifyCategoryRequestList, member);
+        categoryService.saveCategoryChanges(modifyCategoryRequestList, member);
 
         //then
         assertThat(List.of(category1,category2, category3))
@@ -270,7 +267,7 @@ class CategoryServiceTest {
         given(categoryRepository.findById(3L))
                 .willReturn(Optional.of(category3));
         //when
-        categoryService.modifyCategory(modifyCategoryRequestList, member);
+        categoryService.saveCategoryChanges(modifyCategoryRequestList, member);
 
         //then
         assertThat(List.of(category1,category2, category3))
@@ -280,6 +277,38 @@ class CategoryServiceTest {
                         tuple(2L, category3, "Test Modify Category Name2", 2L),
                         tuple(3L, category1, "Test Modify Category Name3", 1L)
                 );
+    }
+
+    @Test
+    @DisplayName("카테고리들을 삭제한다.")
+    public void deleteCategory() {
+
+        //given
+        final ModifyCategoryRequest modifyCategoryRequest1 = ModifyCategoryRequest.builder()
+                .categoryId(1L)
+                .categoryName("Test Modify Category Name1")
+                .parentCategoryId(null)
+                .build();
+
+        final ModifyCategoryRequest modifyCategoryRequest3 = ModifyCategoryRequest.builder()
+                .categoryId(3L)
+                .categoryName("Test Modify Category Name3")
+                .parentCategoryId(1L)
+                .build();
+
+        final List<ModifyCategoryRequest> modifyCategoryRequestList =
+                List.of(modifyCategoryRequest1, modifyCategoryRequest3);
+
+        given(categoryRepository.findById(1L))
+                .willReturn(Optional.of(category1));
+        given(categoryRepository.findById(3L))
+                .willReturn(Optional.of(category3));
+        given(categoryRepository.findAllByIdNotIn(any()))
+                .willReturn(List.of(category2));
+        //when
+        categoryService.saveCategoryChanges(modifyCategoryRequestList, member);
+
+        verify(categoryRepository,times(1)).findAllByIdNotIn(any());
     }
 
 }

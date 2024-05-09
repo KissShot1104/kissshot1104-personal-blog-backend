@@ -4,11 +4,9 @@ package kissshot1104.personal.blog.integration.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.BDDMockito.given;
 
 import jakarta.persistence.EntityManager;
 import java.util.List;
-import kissshot1104.personal.blog.category.dto.request.CreateCategoryRequest;
 import kissshot1104.personal.blog.category.dto.request.ModifyCategoryRequest;
 import kissshot1104.personal.blog.category.dto.response.FindCategoryResponse;
 import kissshot1104.personal.blog.category.entity.Category;
@@ -69,30 +67,31 @@ class CategoryServiceTest {
     }
 
 
-
     @Test
     @DisplayName("부모 카테고리가 존재하지 않으면 예외가 발생한다.")
     void createCategoryParentCategoryNotFoundException() {
 
-        final CreateCategoryRequest createCategoryRequest = CreateCategoryRequest.builder()
+        final ModifyCategoryRequest modifyCategoryRequest = ModifyCategoryRequest.builder()
                 .parentCategoryId(999L)
                 .categoryName(null)
                 .build();
 
-        assertThatThrownBy(() -> categoryService.createCategory(createCategoryRequest, member))
+        assertThatThrownBy(() -> categoryService.saveCategoryChanges(List.of(modifyCategoryRequest), member))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage(ErrorCode.INVALID_INPUT_VALUE.getMessage());
+                .hasMessage(ErrorCode.ENTITY_NOT_FOUND.getMessage());
     }
 
     @Test
     @DisplayName("root 카테고리를 만든다.")
     void createRootCategory() {
-        final CreateCategoryRequest createCategoryRequest = CreateCategoryRequest.builder()
+        final ModifyCategoryRequest modifyCategoryRequest = ModifyCategoryRequest.builder()
                 .parentCategoryId(null)
                 .categoryName("Test Parent Category Name")
                 .build();
+        categoryService.saveCategoryChanges(List.of(modifyCategoryRequest), member);
+        final Category result = categoryService.findByCategoryId(4L);
 
-        assertThat(categoryService.createCategory(createCategoryRequest, member))
+        assertThat(result)
                 .extracting("id",
                         "category",
                         "categoryName",
@@ -107,13 +106,35 @@ class CategoryServiceTest {
     @Test
     @DisplayName("자식 카테고리를 만든다.")
     void createChildCategory() {
-
-        final CreateCategoryRequest createCategoryRequest = CreateCategoryRequest.builder()
+        //given
+        final ModifyCategoryRequest modifyCategoryRequest1 = ModifyCategoryRequest.builder()
                 .parentCategoryId(1L)
                 .categoryName("Test Child Category Name")
                 .build();
 
-        Category result = categoryService.createCategory(createCategoryRequest, new Member());
+        final ModifyCategoryRequest modifyCategoryRequest2 = ModifyCategoryRequest.builder()
+                .categoryId(1L)
+                .categoryName("Test Modify Category Name1")
+                .parentCategoryId(null)
+                .build();
+
+        final ModifyCategoryRequest modifyCategoryRequest3 = ModifyCategoryRequest.builder()
+                .categoryId(2L)
+                .categoryName("Test Modify Category Name2")
+                .parentCategoryId(3L)
+                .build();
+
+        final ModifyCategoryRequest modifyCategoryRequest4 = ModifyCategoryRequest.builder()
+                .categoryId(3L)
+                .categoryName("Test Modify Category Name3")
+                .parentCategoryId(1L)
+                .build();
+
+        final List<ModifyCategoryRequest> modifyCategoryRequests =
+                List.of(modifyCategoryRequest1, modifyCategoryRequest2, modifyCategoryRequest3, modifyCategoryRequest4);
+
+        categoryService.saveCategoryChanges(modifyCategoryRequests, new Member());
+        final Category result = categoryService.findByCategoryId(4L);
         assertThat(result)
                 .extracting("id", "category", "categoryName", "categoryDepth")
                 .contains(4L, category1, "Test Child Category Name", 1L);
@@ -143,7 +164,7 @@ class CategoryServiceTest {
                 List.of(modifyCategoryRequest1);
 
         //then
-        assertThatThrownBy(() -> categoryService.modifyCategory(modifyCategoryRequestList, member))
+        assertThatThrownBy(() -> categoryService.saveCategoryChanges(modifyCategoryRequestList, member))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("지정한 Entity를 찾을 수 없습니다.");
     }
@@ -175,7 +196,7 @@ class CategoryServiceTest {
                 List.of(modifyCategoryRequest1, modifyCategoryRequest2, modifyCategoryRequest3);
 
         //when
-        categoryService.modifyCategory(modifyCategoryRequestList, member);
+        categoryService.saveCategoryChanges(modifyCategoryRequestList, member);
 
         //then
         assertThat(List.of(category1,category2, category3))
@@ -214,7 +235,7 @@ class CategoryServiceTest {
                 List.of(modifyCategoryRequest1, modifyCategoryRequest2, modifyCategoryRequest3);
 
         //when
-        categoryService.modifyCategory(modifyCategoryRequestList, member);
+        categoryService.saveCategoryChanges(modifyCategoryRequestList, member);
 
         //then
         assertThat(List.of(category1,category2, category3))
@@ -224,5 +245,38 @@ class CategoryServiceTest {
                         tuple(2L, category3, "Test Modify Category Name2", 2L),
                         tuple(3L, category1, "Test Modify Category Name3", 1L)
                 );
+    }
+
+    @Test
+    @DisplayName("카테고리들을 삭제한다.")
+    public void deleteCategory() {
+
+        //given
+        final ModifyCategoryRequest modifyCategoryRequest1 = ModifyCategoryRequest.builder()
+                .categoryId(1L)
+                .categoryName("Test Modify Category Name1")
+                .parentCategoryId(null)
+                .build();
+
+        final ModifyCategoryRequest modifyCategoryRequest3 = ModifyCategoryRequest.builder()
+                .categoryId(3L)
+                .categoryName("Test Modify Category Name3")
+                .parentCategoryId(1L)
+                .build();
+
+        final List<ModifyCategoryRequest> modifyCategoryRequestList =
+                List.of(modifyCategoryRequest1, modifyCategoryRequest3);
+
+        //when
+        categoryService.saveCategoryChanges(modifyCategoryRequestList, member);
+
+        //then
+        assertThat(categoryRepository.findAll())
+                .extracting("id", "category", "categoryName", "categoryDepth")
+                .contains(
+                        tuple(1L, null, "Test Modify Category Name1", 0L),
+                        tuple(3L, category1, "Test Modify Category Name3", 1L)
+                );
+
     }
 }
