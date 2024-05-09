@@ -45,17 +45,4 @@ public class Category {
         this.categoryDepth = categoryDepth;
     }
 
-    public void addChildInternal(Category child) {
-        if (child != null) {
-            child.category = this;
-            child.categoryDepth = this.categoryDepth + 1;
-        }
-    }
-
-    public void removeChildInternal(Category child) {
-        if (child != null && child.getCategory() == this) {
-            child.category = null;
-            child.categoryDepth = 0L;
-        }
-    }
 }

@@ -73,7 +73,6 @@ public class CategoryService {
             newParent = categoryRepository.findById(modifyCategoryRequest.parentCategoryId())
                     .orElse(null);
         }
-        changeParent(category, newParent, modifyCategoryRequest.categoryName());
         category.modifyCategory(newParent, modifyCategoryRequest.categoryName());
 
         return category;
@@ -129,18 +128,5 @@ public class CategoryService {
         }
         return depth - 1;
     }
-
-    public void changeParent(Category category, Category newParent, String newName) {
-        if (category != null && newParent != category.getCategory()) {
-            if (category.getCategory() != null) {
-                category.getCategory().removeChildInternal(category);
-            }
-            category.modifyCategory(newParent, newName);
-            if (newParent != null) {
-                newParent.addChildInternal(category);
-            }
-        }
-    }
-
 
 }
