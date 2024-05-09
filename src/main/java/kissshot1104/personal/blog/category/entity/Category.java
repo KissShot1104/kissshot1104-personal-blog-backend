@@ -7,10 +7,10 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
-import kissshot1104.personal.blog.category.dto.request.ModifyCategoryRequest;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -19,6 +19,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Entity
 @Getter
+@EqualsAndHashCode
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,5 +43,19 @@ public class Category {
 
     public void modifyCategoryDepth(final Long categoryDepth) {
         this.categoryDepth = categoryDepth;
+    }
+
+    public void addChildInternal(Category child) {
+        if (child != null) {
+            child.category = this;
+            child.categoryDepth = this.categoryDepth + 1;
+        }
+    }
+
+    public void removeChildInternal(Category child) {
+        if (child != null && child.getCategory() == this) {
+            child.category = null;
+            child.categoryDepth = 0L;
+        }
     }
 }
