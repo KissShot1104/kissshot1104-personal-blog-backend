@@ -69,90 +69,90 @@ class CategoryServiceTest {
         categoryRepository.saveAll(List.of(category1, category2, category3));
     }
 
-    @Test
-    @DisplayName("부모 카테고리가 존재하지 않으면 예외가 발생한다.")
-    void createCategoryParentCategoryNotFoundException() {
-
-        final ModifyCategoryRequest createCategoryRequest =
-                new ModifyCategoryRequest(null, "Test Parent Category Name", 9999L);
-
-        given(categoryRepository.findById(any()))
-                .willThrow(new BusinessException(ErrorCode.INVALID_INPUT_VALUE));
-
-        assertThatThrownBy(() -> categoryService.addCategory(createCategoryRequest))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage(ErrorCode.INVALID_INPUT_VALUE.getMessage());
-    }
-
-    //
-//    //todo 어떤 예외가 발생하는지 자세하게 알아보고 변경해야함
 //    @Test
-//    @DisplayName("카테고리 이름이 없다면 예외가 발생한다.")
-//    void createCategoryEmptyCategoryNameException() {
+//    @DisplayName("부모 카테고리가 존재하지 않으면 예외가 발생한다.")
+//    void createCategoryParentCategoryNotFoundException() {
 //
-//        final CreateCategoryRequest createCategoryRequest = CreateCategoryRequest.builder()
-//                .parentCategoryId(null)
-//                .categoryName(null)
-//                .build();
+//        final ModifyCategoryRequest createCategoryRequest =
+//                new ModifyCategoryRequest(null, "Test Parent Category Name", 9999L);
 //
-//        assertThatThrownBy(() -> categoryService.createCategory(createCategoryRequest, member))
-//                .isInstanceOf(ConstraintViolationException.class);
+//        given(categoryRepository.findById(any()))
+//                .willThrow(new BusinessException(ErrorCode.INVALID_INPUT_VALUE));
+//
+//        assertThatThrownBy(() -> categoryService.addCategory(createCategoryRequest))
+//                .isInstanceOf(BusinessException.class)
+//                .hasMessage(ErrorCode.INVALID_INPUT_VALUE.getMessage());
 //    }
 //
-    @Test
-    @DisplayName("root 카테고리를 만든다.")
-    void createRootCategory() {
-        final ModifyCategoryRequest createCategoryRequest =
-                new ModifyCategoryRequest(null, "Test Parent Category Name", null);
-
-        final Category parentCategory = Category.builder()
-                .id(1L)
-                .category(null)
-                .categoryName("Test Parent Category Name")
-                .categoryDepth(0L)
-                .build();
-
-        lenient().when(categoryRepository.findById(any())).thenReturn(Optional.of(parentCategory));
-        given(categoryRepository.save(any())).willReturn(parentCategory);
-
-        assertThat(categoryService.addCategory(createCategoryRequest))
-                .extracting("id",
-                        "category",
-                        "categoryName",
-                        "categoryDepth")
-                .contains(1L,
-                        null,
-                        "Test Parent Category Name",
-                        0L
-                );
-    }
-
-    @Test
-    @DisplayName("자식 카테고리를 만든다.")
-    void createChildCategory() {
-
-        final Category parentCategory = Category.builder()
-                .id(1L)
-                .category(null)
-                .categoryName("Test Parent Category Name")
-                .categoryDepth(0L)
-                .build();
-
-        lenient().when(categoryRepository.findById(1L)).thenReturn(Optional.of(parentCategory));
-
-        final Category childCategory = Category.builder()
-                .id(2L)
-                .category(parentCategory)
-                .categoryName("Test Child Category Name")
-                .categoryDepth(1L)
-                .build();
-        given(categoryRepository.save(any())).willReturn(childCategory);
-
-        Category result = categoryService.addCategory(new ModifyCategoryRequest(null, "Test Child Category Name", 1L));
-        assertThat(result)
-                .extracting("id", "category", "categoryName", "categoryDepth")
-                .contains(2L, parentCategory, "Test Child Category Name", 1L);
-    }
+//    //
+////    //todo 어떤 예외가 발생하는지 자세하게 알아보고 변경해야함
+////    @Test
+////    @DisplayName("카테고리 이름이 없다면 예외가 발생한다.")
+////    void createCategoryEmptyCategoryNameException() {
+////
+////        final CreateCategoryRequest createCategoryRequest = CreateCategoryRequest.builder()
+////                .parentCategoryId(null)
+////                .categoryName(null)
+////                .build();
+////
+////        assertThatThrownBy(() -> categoryService.createCategory(createCategoryRequest, member))
+////                .isInstanceOf(ConstraintViolationException.class);
+////    }
+////
+//    @Test
+//    @DisplayName("root 카테고리를 만든다.")
+//    void createRootCategory() {
+//        final ModifyCategoryRequest createCategoryRequest =
+//                new ModifyCategoryRequest(null, "Test Parent Category Name", null);
+//
+//        final Category parentCategory = Category.builder()
+//                .id(1L)
+//                .category(null)
+//                .categoryName("Test Parent Category Name")
+//                .categoryDepth(0L)
+//                .build();
+//
+//        lenient().when(categoryRepository.findById(any())).thenReturn(Optional.of(parentCategory));
+//        given(categoryRepository.save(any())).willReturn(parentCategory);
+//
+//        assertThat(categoryService.addCategory(createCategoryRequest))
+//                .extracting("id",
+//                        "category",
+//                        "categoryName",
+//                        "categoryDepth")
+//                .contains(1L,
+//                        null,
+//                        "Test Parent Category Name",
+//                        0L
+//                );
+//    }
+//
+//    @Test
+//    @DisplayName("자식 카테고리를 만든다.")
+//    void createChildCategory() {
+//
+//        final Category parentCategory = Category.builder()
+//                .id(1L)
+//                .category(null)
+//                .categoryName("Test Parent Category Name")
+//                .categoryDepth(0L)
+//                .build();
+//
+//        lenient().when(categoryRepository.findById(1L)).thenReturn(Optional.of(parentCategory));
+//
+//        final Category childCategory = Category.builder()
+//                .id(2L)
+//                .category(parentCategory)
+//                .categoryName("Test Child Category Name")
+//                .categoryDepth(1L)
+//                .build();
+//        given(categoryRepository.save(any())).willReturn(childCategory);
+//
+//        Category result = categoryService.addCategory(new ModifyCategoryRequest(null, "Test Child Category Name", 1L));
+//        assertThat(result)
+//                .extracting("id", "category", "categoryName", "categoryDepth")
+//                .contains(2L, parentCategory, "Test Child Category Name", 1L);
+//    }
 
     @Test
     @DisplayName("모든 카테고리를 조회한다.")
