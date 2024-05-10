@@ -20,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.core.parameters.P;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -73,7 +74,8 @@ class CategoryServiceTest {
 
         final ModifyCategoryRequest modifyCategoryRequest = ModifyCategoryRequest.builder()
                 .parentCategoryId(999L)
-                .categoryName(null)
+                .categoryId(1L)
+                .categoryName("exception")
                 .build();
 
         assertThatThrownBy(() -> categoryService.saveCategoryChanges(List.of(modifyCategoryRequest), member))
@@ -85,7 +87,7 @@ class CategoryServiceTest {
     @DisplayName("root 카테고리를 만든다.")
     void createRootCategory() {
         final ModifyCategoryRequest modifyCategoryRequest = ModifyCategoryRequest.builder()
-                .parentCategoryId(null)
+                .subCategoryId(1L)
                 .categoryName("Test Parent Category Name")
                 .build();
         categoryService.saveCategoryChanges(List.of(modifyCategoryRequest), member);
@@ -109,6 +111,7 @@ class CategoryServiceTest {
         //given
         final ModifyCategoryRequest modifyCategoryRequest1 = ModifyCategoryRequest.builder()
                 .parentCategoryId(1L)
+                .subCategoryId(1L)
                 .categoryName("Test Child Category Name")
                 .build();
 
@@ -277,6 +280,95 @@ class CategoryServiceTest {
                         tuple(1L, null, "Test Modify Category Name1", 0L),
                         tuple(3L, category1, "Test Modify Category Name3", 1L)
                 );
+    }
 
+    @Test
+    @DisplayName("새로 만들어진 카테고리끼리 부모 자식으로 연결된다.")
+    public void addCategoryTest1() {
+        //given
+        final ModifyCategoryRequest modifyCategoryRequest1 = ModifyCategoryRequest.builder()
+                .subCategoryId(1L)
+                .categoryName("test1")
+                .subParentCategoryId(2L)
+                .build();
+
+        final ModifyCategoryRequest modifyCategoryRequest2 = ModifyCategoryRequest.builder()
+                .subCategoryId(2L)
+                .categoryName("test2")
+                .build();
+
+        final List<ModifyCategoryRequest> modifyCategoryRequestList =
+                List.of(modifyCategoryRequest1, modifyCategoryRequest2);
+        //when
+        categoryService.saveCategoryChanges(modifyCategoryRequestList, member);
+
+        Category c = categoryRepository.findById(5L).get();
+        //then
+        assertThat(categoryRepository.findAll())
+                .extracting("id", "category", "categoryName", "categoryDepth")
+                .contains(
+                        tuple(4L, c, "test1", 1L),
+                        tuple(5L, null, "test2", 0L)
+                );
+    }
+
+    @Test
+    @DisplayName("새로운 카테고리도 root가 될 수 있다.")
+    public void addCategoryTest2() {
+        //given
+        final ModifyCategoryRequest modifyCategoryRequest1 = ModifyCategoryRequest.builder()
+                .categoryId(1L)
+                .categoryName("test1")
+                .subParentCategoryId(2L)
+                .build();
+
+        final ModifyCategoryRequest newParentCategory = ModifyCategoryRequest.builder()
+                .subCategoryId(2L)
+                .categoryName("test2")
+                .build();
+
+        final List<ModifyCategoryRequest> modifyCategoryRequestList =
+                List.of(modifyCategoryRequest1, newParentCategory);
+        //when
+        categoryService.saveCategoryChanges(modifyCategoryRequestList, member);
+
+        Category c = categoryRepository.findById(4L).get();
+        //then
+        assertThat(categoryRepository.findAll())
+                .extracting("id", "category", "categoryName", "categoryDepth")
+                .contains(
+                        tuple(1L, c, "test1", 1L),
+                        tuple(4L, null, "test2", 0L)
+                );
+    }
+
+    @Test
+    @DisplayName("새로운 카테고리도 자식이 될 수 있다.")
+    public void addCategoryTest3() {
+        //given
+        final ModifyCategoryRequest modifyCategoryRequest1 = ModifyCategoryRequest.builder()
+                .categoryId(1L)
+                .categoryName("test1")
+                .build();
+
+        final ModifyCategoryRequest newParentCategory = ModifyCategoryRequest.builder()
+                .subCategoryId(2L)
+                .parentCategoryId(1L)
+                .categoryName("test2")
+                .build();
+
+        final List<ModifyCategoryRequest> modifyCategoryRequestList =
+                List.of(modifyCategoryRequest1, newParentCategory);
+        //when
+        categoryService.saveCategoryChanges(modifyCategoryRequestList, member);
+
+        Category c = categoryRepository.findById(1L).get();
+        //then
+        assertThat(categoryRepository.findAll())
+                .extracting("id", "category", "categoryName", "categoryDepth")
+                .contains(
+                        tuple(1L, null, "test1", 0L),
+                        tuple(4L, c, "test2", 1L)
+                );
     }
 }
