@@ -18,10 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+//todo 리팩토링 해야함 메모
 public class CategoryService {
     private final CategoryRepository categoryRepository;
 
-    //todo 리팩토링 해야함 메모
+
     public List<FindCategoryResponse> findAllCategory() {
         final List<Category> categoryList = categoryRepository.findAll();
         Map<Long, FindCategoryResponse> findCategoryResponseMap = new HashMap<>();
@@ -49,12 +50,20 @@ public class CategoryService {
     @Transactional
     public void saveCategoryChanges(List<ModifyCategoryRequest> modifyCategoryRequests, Member member) {
         List<Category> modifyedCategories = new ArrayList<>();
+        Map<Long, Category> categoryMap = new HashMap<>();
+        for (final ModifyCategoryRequest modifyCategoryRequest : modifyCategoryRequests) {
+            if (modifyCategoryRequest.categoryId() == null) {
+                final Category category = addCategory(modifyCategoryRequest);
+                modifyedCategories.add(category);
+                categoryMap.put(modifyCategoryRequest.subCategoryId(), category);
+            }
+        }
+
+
         for (final ModifyCategoryRequest modifyCategoryRequest : modifyCategoryRequests) {
             Category category = null;
-            if (modifyCategoryRequest.categoryId() == null) {
-                category = addCategory(modifyCategoryRequest);
-            } else if (modifyCategoryRequest.categoryId() != null) {
-                category = modifyCatgory(modifyCategoryRequest);
+            if (modifyCategoryRequest.categoryId() != null || modifyCategoryRequest.subCategoryId() != null) {
+                category = modifyCatgory(modifyCategoryRequest, categoryMap);
             }
             modifyedCategories.add(category);
         }
@@ -65,13 +74,23 @@ public class CategoryService {
         }
     }
 
-    public Category modifyCatgory(final ModifyCategoryRequest modifyCategoryRequest) {
-        Category category = findByCategoryId(modifyCategoryRequest.categoryId());
-
+    public Category modifyCatgory(final ModifyCategoryRequest modifyCategoryRequest, Map<Long, Category> categoryMap) {
+        Category category = null;
+        if (modifyCategoryRequest.categoryId() != null) {
+            category = categoryRepository.findById(modifyCategoryRequest.categoryId()).orElse(null);
+        }
+        if (category == null) {
+            category = categoryMap.get(modifyCategoryRequest.subCategoryId());
+        }
+        if (category == null) {
+            throw new BusinessException(ErrorCode.ENTITY_NOT_FOUND);
+        }
         Category newParent = null;
         if (modifyCategoryRequest.parentCategoryId() != null) {
-            newParent = categoryRepository.findById(modifyCategoryRequest.parentCategoryId())
-                    .orElse(null);
+            newParent = findByCategoryId(modifyCategoryRequest.parentCategoryId());
+        } else if (modifyCategoryRequest.subParentCategoryId() != null) {
+            //부모 카테고리가 새로 만들어진 카테고리라면 이렇게 가져옴
+            newParent = categoryMap.get(modifyCategoryRequest.subParentCategoryId());
         }
         category.modifyCategory(newParent, modifyCategoryRequest.categoryName());
 
@@ -79,12 +98,7 @@ public class CategoryService {
     }
 
     public Category addCategory(final ModifyCategoryRequest categoryRequest) {
-        Category parentCategory = null;
-        if (categoryRequest.parentCategoryId() != null) {
-            parentCategory = findByCategoryId(categoryRequest.parentCategoryId());
-        }
         final Category category = Category.builder()
-                .category(parentCategory)
                 .categoryDepth(0L)
                 .categoryName(categoryRequest.categoryName())
                 .build();
