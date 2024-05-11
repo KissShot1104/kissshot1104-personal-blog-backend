@@ -1,4 +1,4 @@
-package kissshot1104.personal.blog.category.controller;
+package kissshot1104.personal.blog.integration.controller;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -8,7 +8,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import java.util.List;
@@ -41,9 +40,6 @@ import org.springframework.transaction.annotation.Transactional;
 class CategoryControllerTest {
     @Autowired
     private CategoryRepository categoryRepository;
-
-    @Autowired
-    private CategoryService categoryService;
 
     @Autowired
     private EntityManager em;
@@ -206,7 +202,6 @@ class CategoryControllerTest {
     }
 
 
-
     @Test
     @DisplayName("카테고리이름을 수정한다.")
     public void modifyCategoryName() throws Exception {
@@ -234,7 +229,7 @@ class CategoryControllerTest {
                 .andExpect(status().isOk());
 
         //then
-        List<Category> categories = categoryRepository.findAll();
+        final List<Category> categories = categoryRepository.findAll();
         assertThat(categories)
                 .extracting("id", "category", "categoryName", "categoryDepth")
                 .contains(
@@ -281,7 +276,7 @@ class CategoryControllerTest {
                 .andExpect(status().isOk());
 
         //then
-        List<Category> categories = categoryRepository.findAll();
+        final List<Category> categories = categoryRepository.findAll();
         assertThat(categories)
                 .extracting("id", "category", "categoryName", "categoryDepth")
                 .contains(
@@ -324,8 +319,8 @@ class CategoryControllerTest {
                 .andExpect(status().isOk());
 
         //then
-        List<Category> categories = categoryRepository.findAll();
-        Category category4 = categoryRepository.findById(4L).get();
+        final List<Category> categories = categoryRepository.findAll();
+        final Category category4 = categoryRepository.findById(4L).get();
         assertThat(categories)
                 .extracting("id", "category", "categoryName", "categoryDepth")
                 .contains(
