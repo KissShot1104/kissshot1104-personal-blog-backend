@@ -8,4 +8,10 @@ public record ModifyCategoryRequest(Long categoryId,
                                     Long parentCategoryId,
                                     Long subCategoryId,
                                     Long subParentCategoryId) {
+    public Boolean isNewCategory() {
+        if (categoryId == null) {
+            return true;
+        }
+        return false;
+    }
 }
