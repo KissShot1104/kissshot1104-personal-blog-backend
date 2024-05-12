@@ -1,9 +1,14 @@
 package kissshot1104.personal.blog.integration.controller;
 
 
+import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -15,7 +20,6 @@ import kissshot1104.personal.blog.category.dto.ModifyCategoryDto;
 import kissshot1104.personal.blog.category.dto.ModifyCategoryDtos;
 import kissshot1104.personal.blog.category.entity.Category;
 import kissshot1104.personal.blog.category.repository.CategoryRepository;
-import kissshot1104.personal.blog.category.service.CategoryService;
 import kissshot1104.personal.blog.global.security.prinipal.MemberPrincipal;
 import kissshot1104.personal.blog.member.entity.Member;
 import kissshot1104.personal.blog.member.repository.MemberRepository;
@@ -27,6 +31,7 @@ import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDoc
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
@@ -328,4 +333,69 @@ class CategoryControllerTest {
                         tuple(4L, null, "Test Category Name2", 0L)
                 );
     }
+
+    @Test
+    @DisplayName("변경된 카테고리 설정을 모두 저장한다.")
+    public void categorySettingsUpdate() throws Exception {
+        //given
+        final ModifyCategoryDto createCategory = ModifyCategoryDto.builder()
+                .subCategoryId(1L)
+                .categoryName("new Category Name")
+                .build();
+
+        final ModifyCategoryDto modify1 = ModifyCategoryDto.builder()
+                .categoryId(1L)
+                .categoryName("modified Category Name")
+                .parentCategoryId(4L)
+                .build();
+
+        final ModifyCategoryDtos modifyCategoryDtos = ModifyCategoryDtos.builder()
+                .modifyCategoryDtos(List.of(createCategory, modify1))
+                .build();
+        //when
+        mock.perform(post("/api/v1/save-category")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(modifyCategoryDtos))
+                        .header("Authorization", "Bearer {AccessToken}")
+                        .with(SecurityMockMvcRequestPostProcessors.user(user)))
+                .andDo(print())
+                .andDo(document("변경된 모든 카테고리 설정을 저장한다.",
+                        requestHeaders(
+                                headerWithName("Authorization")
+                                        .description("AccessToken")
+                        ),
+                        requestFields(
+                                fieldWithPath("modifyCategoryDtos")
+                                        .type(JsonFieldType.ARRAY)
+                                        .description("@Valid를 사용하기 위해 일급컬렉션을 사용하게 되었다"),
+                                fieldWithPath("modifyCategoryDtos[].categoryId")
+                                        .type(JsonFieldType.NUMBER)
+                                        .description("카테고리 ID").optional(),
+                                fieldWithPath("modifyCategoryDtos[].categoryName")
+                                        .type(JsonFieldType.STRING)
+                                        .description("카테고리 이름"),
+                                fieldWithPath("modifyCategoryDtos[].parentCategoryId")
+                                        .type(JsonFieldType.NUMBER)
+                                        .description("부모 카테고리 ID").optional(),
+                                fieldWithPath("modifyCategoryDtos[].subCategoryId")
+                                        .type(JsonFieldType.NUMBER)
+                                        .description("임시로 만들어진 카테고리 ID").optional(),
+                                fieldWithPath("modifyCategoryDtos[].subParentCategoryId")
+                                        .type(JsonFieldType.NUMBER)
+                                        .description("임시로 만들어진 부모 카테고리 ID").optional()
+                        )
+                ))
+                .andExpect(status().isOk());
+        //then
+        final List<Category> categories = categoryRepository.findAll();
+        final Category category4 = categoryRepository.findById(4L).get();
+        assertThat(categories)
+                .extracting("id", "category", "categoryName", "categoryDepth")
+                .contains(
+                        tuple(1L, category4, "modified Category Name", 1L),
+                        tuple(4L, null, "new Category Name", 0L)
+                );
+    }
+
+    //todo 순회하는 최종 검증로직 만들어야함
 }
