@@ -398,4 +398,44 @@ class CategoryControllerTest {
     }
 
     //todo 순회하는 최종 검증로직 만들어야함
+    @Test
+    @DisplayName("카테고리가 순환을 한다면 예외가 발생한다.")
+    public void circularReferenceValidateTest() throws Exception {
+        //given
+        final ModifyCategoryDto modify1 = ModifyCategoryDto.builder()
+                .categoryId(1L)
+                .categoryName("Test Category Name1")
+                .parentCategoryId(3L)
+                .build();
+
+        final ModifyCategoryDto modify2 = ModifyCategoryDto.builder()
+                .categoryId(2L)
+                .categoryName("Test Category Name2")
+                .parentCategoryId(1L)
+                .build();
+
+        final ModifyCategoryDto modify3 = ModifyCategoryDto.builder()
+                .categoryId(3L)
+                .categoryName("Test Category Name2")
+                .parentCategoryId(2L)
+                .build();
+
+        final ModifyCategoryDtos modifyCategoryDtos = ModifyCategoryDtos.builder()
+                .modifyCategoryDtos(List.of(modify1,
+                        modify2,
+                        modify3))
+                .build();
+
+        //when
+        mock.perform(post("/api/v1/save-category")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(modifyCategoryDtos))
+                        .with(SecurityMockMvcRequestPostProcessors.user(user)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpectAll(
+                        jsonPath("$.message").value("순환참조를 감지했습니다."),
+                        jsonPath("$.code").value("C_004")
+                );
+    }
 }
