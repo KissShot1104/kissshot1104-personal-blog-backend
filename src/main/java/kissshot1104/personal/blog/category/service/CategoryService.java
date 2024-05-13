@@ -2,9 +2,11 @@ package kissshot1104.personal.blog.category.service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import kissshot1104.personal.blog.category.dto.request.ModifyCategoryRequest;
 import kissshot1104.personal.blog.category.dto.response.FindCategoryResponse;
 import kissshot1104.personal.blog.category.entity.Category;
@@ -97,6 +99,8 @@ public class CategoryService {
         final Category category = Optional.ofNullable(request.parentCategoryId())
                 .map(this::findByCategoryId)
                 .orElseGet(() -> categoryMap.get(request.subParentCategoryId()));
+
+        validateNoCircularReference(category.getId(), category);
         return category;
     }
 
@@ -143,5 +147,23 @@ public class CategoryService {
         final Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
         return category;
+    }
+
+    private void validateNoCircularReference(final Long categoryId, final Category newParent) {
+        Set<Long> visited = traceParentCategoryChain(newParent);
+        if (visited.contains(categoryId)) {
+            throw new BusinessException(ErrorCode.CIRCULAR_REFERENCE_DETECTED);
+        }
+    }
+
+    private Set<Long> traceParentCategoryChain(Category current) {
+        Set<Long> visited = new HashSet<>();
+        while (current != null) {
+            if (!visited.add(current.getId())) {
+                throw new BusinessException(ErrorCode.CIRCULAR_REFERENCE_DETECTED);
+            }
+            current = current.getCategory();
+        }
+        return visited;
     }
 }
