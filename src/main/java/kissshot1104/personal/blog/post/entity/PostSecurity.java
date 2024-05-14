@@ -7,7 +7,7 @@ import lombok.Getter;
 
 @Getter
 public enum PostSecurity {
-    CLOSE, PROTECTED, OPEN;
+    PUBLIC, PROTECTED, PRIVATE;
 
     public static PostSecurity checkPostSecurity(final String securityType) {
         return Arrays.stream(PostSecurity.values())
