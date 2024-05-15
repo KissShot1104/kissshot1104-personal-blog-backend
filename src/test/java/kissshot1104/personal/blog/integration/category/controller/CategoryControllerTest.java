@@ -1,4 +1,4 @@
-package kissshot1104.personal.blog.integration.controller;
+package kissshot1104.personal.blog.integration.category.controller;
 
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
