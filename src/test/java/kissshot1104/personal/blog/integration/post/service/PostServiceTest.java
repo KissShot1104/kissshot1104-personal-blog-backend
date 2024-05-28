@@ -65,7 +65,6 @@ public class PostServiceTest {
         em.createNativeQuery("ALTER TABLE post AUTO_INCREMENT = 1;").executeUpdate();
 
         member = Member.builder()
-                .id(1L)
                 .username("username")
                 .password("password")
                 .roles("ROLE_ADMIN")
