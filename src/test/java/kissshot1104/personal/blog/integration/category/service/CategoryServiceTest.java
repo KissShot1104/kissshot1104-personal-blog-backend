@@ -135,7 +135,7 @@ class CategoryServiceTest {
         final List<ModifyCategoryRequest> modifyCategoryRequests =
                 List.of(modifyCategoryRequest1, modifyCategoryRequest2, modifyCategoryRequest3, modifyCategoryRequest4);
 
-        categoryService.saveCategoryChanges(modifyCategoryRequests, new Member());
+        categoryService.saveCategoryChanges(modifyCategoryRequests, Member.builder().build());
         final Category result = categoryService.findByCategoryId(4L);
         assertThat(result)
                 .extracting("id", "category", "categoryName", "categoryDepth")
