@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import kissshot1104.personal.blog.global.BaseEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -16,6 +17,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
+@EqualsAndHashCode(callSuper = false)
 public class Member extends BaseEntity {
 
     @Id
