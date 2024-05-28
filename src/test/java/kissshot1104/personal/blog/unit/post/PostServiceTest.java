@@ -55,7 +55,6 @@ public class PostServiceTest {
     void setUp() {
 
         member = Member.builder()
-                .id(1L)
                 .username("username")
                 .password("password")
                 .roles("ROLE_ADMIN")
