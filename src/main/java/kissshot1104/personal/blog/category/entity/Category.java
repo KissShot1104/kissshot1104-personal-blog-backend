@@ -10,6 +10,7 @@ import jakarta.persistence.ManyToOne;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -18,6 +19,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Entity
 @Getter
+@EqualsAndHashCode
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,4 +34,15 @@ public class Category {
 
     @Column(nullable = false)
     private Long categoryDepth;
+
+    public void modifyCategory(final Category parentCategory,
+                               final String categoryName) {
+        this.category = parentCategory;
+        this.categoryName = categoryName;
+    }
+
+    public void modifyCategoryDepth(final Long categoryDepth) {
+        this.categoryDepth = categoryDepth;
+    }
+
 }
