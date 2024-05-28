@@ -64,6 +64,7 @@ public class CategoryService {
             modifiedCategories.add(category);
 
         });
+        validateNoCircularReference(modifiedCategories);
         deleteUnreferencedCategories(modifiedCategories);
         updateCategoryDepth(modifiedCategories);
     }
@@ -99,8 +100,6 @@ public class CategoryService {
         final Category category = Optional.ofNullable(request.parentCategoryId())
                 .map(this::findByCategoryId)
                 .orElseGet(() -> categoryMap.get(request.subParentCategoryId()));
-
-        validateNoCircularReference(category.getId(), category);
         return category;
     }
 
@@ -149,21 +148,15 @@ public class CategoryService {
         return category;
     }
 
-    private void validateNoCircularReference(final Long categoryId, final Category newParent) {
-        Set<Long> visited = traceParentCategoryChain(newParent);
-        if (visited.contains(categoryId)) {
-            throw new BusinessException(ErrorCode.CIRCULAR_REFERENCE_DETECTED);
-        }
-    }
-
-    private Set<Long> traceParentCategoryChain(Category current) {
-        Set<Long> visited = new HashSet<>();
-        while (current != null) {
-            if (!visited.add(current.getId())) {
-                throw new BusinessException(ErrorCode.CIRCULAR_REFERENCE_DETECTED);
+    private void validateNoCircularReference(List<Category> categories) {
+        for (Category current : categories) {
+            Set<Long> visited = new HashSet<>();
+            while (current != null) {
+                if (!visited.add(current.getId())) {
+                    throw new BusinessException(ErrorCode.CIRCULAR_REFERENCE_DETECTED);
+                }
+                current = current.getCategory();
             }
-            current = current.getCategory();
         }
-        return visited;
     }
 }
