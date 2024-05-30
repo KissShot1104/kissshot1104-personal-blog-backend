@@ -39,12 +39,14 @@ public class MemberServiceTest {
         member1 = Member.builder()
                 .username("member1")
                 .password("password1")
+                .nickName("nickName1")
                 .roles("USER")
                 .build();
 
         member2 = Member.builder()
                 .username("member2")
                 .password("password2")
+                .nickName("nickName2")
                 .roles("USER")
                 .build();
 
