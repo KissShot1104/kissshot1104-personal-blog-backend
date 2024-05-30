@@ -4,11 +4,16 @@ import jakarta.validation.Valid;
 import java.net.URI;
 import kissshot1104.personal.blog.global.security.prinipal.CurrentMember;
 import kissshot1104.personal.blog.member.entity.Member;
+import kissshot1104.personal.blog.post.dto.AuthenticationDataDto;
 import kissshot1104.personal.blog.post.dto.CreatePostDto;
+import kissshot1104.personal.blog.post.dto.FindPostDto;
+import kissshot1104.personal.blog.post.dto.request.AuthenticationDataRequest;
 import kissshot1104.personal.blog.post.dto.request.CreatePostRequest;
+import kissshot1104.personal.blog.post.dto.response.FindPostResponse;
 import kissshot1104.personal.blog.post.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,5 +31,15 @@ public class PostController {
         final CreatePostRequest createPostRequest = request.toCreatePostRequest();
         final Long postId = postService.createPost(createPostRequest, member);
         return ResponseEntity.created(URI.create("/post/" + postId)).build();
+    }
+
+    @PostMapping("{postId}")
+    public ResponseEntity<FindPostDto> findPost(@PathVariable("postId") Long postId,
+                                                @RequestBody AuthenticationDataDto authenticationDataDto,
+                                                @CurrentMember Member member) {
+        AuthenticationDataRequest request =
+                authenticationDataDto.toAuthenticationDataRequest();
+        FindPostDto response = FindPostDto.of(postService.findPost(postId, request, member));
+        return ResponseEntity.ok(response);
     }
 }
