@@ -2,16 +2,22 @@ package kissshot1104.personal.blog.integration.post.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import java.util.Optional;
 import kissshot1104.personal.blog.category.entity.Category;
 import kissshot1104.personal.blog.category.repository.CategoryRepository;
 import kissshot1104.personal.blog.category.service.CategoryService;
+import kissshot1104.personal.blog.global.exception.AuthException;
 import kissshot1104.personal.blog.global.exception.BusinessException;
 import kissshot1104.personal.blog.member.entity.Member;
 import kissshot1104.personal.blog.member.repository.MemberRepository;
+import kissshot1104.personal.blog.post.dto.request.AuthenticationData;
 import kissshot1104.personal.blog.post.dto.request.CreatePostRequest;
+import kissshot1104.personal.blog.post.dto.response.FindPostResponse;
 import kissshot1104.personal.blog.post.entity.Post;
 import kissshot1104.personal.blog.post.entity.PostSecurity;
 import kissshot1104.personal.blog.post.repository.PostRepository;
@@ -49,9 +55,9 @@ public class PostServiceTest {
     private Category category1;
     private Category category2;
     private Category category3;
-    private Post post1;
-    private Post post2;
-    private Post post3;
+    private Post publicPost;
+    private Post protectedPost;
+    private Post privatePost;
 
     @BeforeEach
     void setUp() {
@@ -65,6 +71,7 @@ public class PostServiceTest {
         em.createNativeQuery("ALTER TABLE post AUTO_INCREMENT = 1;").executeUpdate();
 
         member = Member.builder()
+                .nickName("nickName1")
                 .username("username")
                 .password("password")
                 .roles("ROLE_ADMIN")
@@ -91,7 +98,7 @@ public class PostServiceTest {
                 .build();
         categoryRepository.saveAll(List.of(category1, category2, category3));
 
-        post1 = Post.builder()
+        publicPost = Post.builder()
                 .id(1L)
                 .category(category1)
                 .member(member)
@@ -100,7 +107,7 @@ public class PostServiceTest {
                 .postPassword("password1")
                 .postSecurity(PostSecurity.PUBLIC)
                 .build();
-        post2 = Post.builder()
+        protectedPost = Post.builder()
                 .id(2L)
                 .category(category2)
                 .member(member)
@@ -109,7 +116,7 @@ public class PostServiceTest {
                 .postPassword("password2")
                 .postSecurity(PostSecurity.PROTECTED)
                 .build();
-        post3 = Post.builder()
+        privatePost = Post.builder()
                 .id(3L)
                 .category(category3)
                 .member(member)
@@ -118,7 +125,7 @@ public class PostServiceTest {
                 .postPassword("password3")
                 .postSecurity(PostSecurity.PRIVATE)
                 .build();
-        postRepository.saveAll(List.of(post1, post2, post3));
+        postRepository.saveAll(List.of(publicPost, protectedPost, privatePost));
     }
 
     @Test
@@ -163,5 +170,94 @@ public class PostServiceTest {
         assertThat(post)
                 .extracting("id", "category", "member", "title", "content", "postPassword", "postSecurity")
                 .contains(4L, category1, member, "title1", "content1", "password1", PostSecurity.PUBLIC);
+    }
+
+    @Test
+    @DisplayName("protected게시글을 조회 시 비밀번호가 틀리면 예외가 발생한다.")
+    public void authExceptionWhenInvalidPassword() {
+        final Member member2 = Member.builder()
+                .username("username2")
+                .password("password2")
+                .roles("ROLE_USER")
+                .build();
+
+        final AuthenticationData authenticationData = AuthenticationData.builder()
+                .postPassword("password1")
+                .build();
+
+        assertThatThrownBy(() -> postService.findPost(2L, authenticationData, member2))
+                .isInstanceOf(AuthException.class)
+                .hasMessage("권한이 없는 사용자입니다.");
+    }
+
+    @Test
+    @DisplayName("protected 게시글을 조회 시 작성자는 비밀번호를 입력하지 않아도 된다.")
+    public void findPostIfAuthorOrValidPassword() {
+        final FindPostResponse findPostResponse =
+                postService.findPost(2L, null, member);
+
+        assertThat(findPostResponse)
+                .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
+                .contains(2L, "category2", "nickName1", "title2", "content2", "PROTECTED");
+    }
+
+    @Test
+    @DisplayName("private 게시글은 작성자가 아니면 조회할 수 없다.")
+    public void canNotViewPrivatePostUnlessAuthor() {
+        final Member member2 = Member.builder()
+                .username("username2")
+                .password("password2")
+                .roles("ROLE_USER")
+                .build();
+
+        assertThatThrownBy(() -> postService.findPost(3L, null, member2))
+                .isInstanceOf(AuthException.class)
+                .hasMessage("권한이 없는 사용자입니다.");
+    }
+
+    @Test
+    @DisplayName("public 게시글을 조회한다.")
+    public void findPublicPostTest() {
+        final Member member2 = Member.builder()
+                .username("username2")
+                .password("password2")
+                .roles("ROLE_USER")
+                .build();
+        final FindPostResponse findPostResponse =
+                postService.findPost(1L, null, member2);
+
+        assertThat(findPostResponse)
+                .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
+                .contains(1L, "category1", "nickName1", "title1", "content1", "PUBLIC");
+    }
+
+    @Test
+    @DisplayName("protected 게시글을 조회한다.")
+    public void findProtectedPostTest() {
+        final Member member2 = Member.builder()
+                .username("username2")
+                .password("password2")
+                .roles("ROLE_USER")
+                .build();
+
+        final AuthenticationData authenticationData = AuthenticationData.builder()
+                .postPassword("password2")
+                .build();
+
+        final FindPostResponse findPostResponse =
+                postService.findPost(2L, authenticationData, member2);
+
+        assertThat(findPostResponse)
+                .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
+                .contains(2L, "category2", "nickName1", "title2", "content2", "PROTECTED");
+    }
+
+    @Test
+    @DisplayName("private 게시글을 조회한다.")
+    public void findPrivatePostTest() {
+        final FindPostResponse response = postService.findPost(3L, null, member);
+        assertThat(response)
+                .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
+                .contains(3L, "category3", "nickName1", "title3", "content3", "PRIVATE");
     }
 }
