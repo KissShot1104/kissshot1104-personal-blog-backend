@@ -1,21 +1,16 @@
-package kissshot1104.personal.blog.unit.post;
-
+package kissshot1104.personal.blog.integration.post.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.when;
 
-import kissshot1104.personal.blog.category.dto.request.CreateCategoryRequest;
+import jakarta.persistence.EntityManager;
+import java.util.List;
 import kissshot1104.personal.blog.category.entity.Category;
 import kissshot1104.personal.blog.category.repository.CategoryRepository;
 import kissshot1104.personal.blog.category.service.CategoryService;
 import kissshot1104.personal.blog.global.exception.BusinessException;
-import kissshot1104.personal.blog.global.exception.ErrorCode;
 import kissshot1104.personal.blog.member.entity.Member;
+import kissshot1104.personal.blog.member.repository.MemberRepository;
 import kissshot1104.personal.blog.post.dto.request.CreatePostRequest;
 import kissshot1104.personal.blog.post.entity.Post;
 import kissshot1104.personal.blog.post.entity.PostSecurity;
@@ -24,41 +19,58 @@ import kissshot1104.personal.blog.post.service.PostService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-@ExtendWith(MockitoExtension.class)
+@Transactional
+@SpringBootTest
 public class PostServiceTest {
-    @Mock
-    private PostRepository postRepository;
-    @Mock
+    @Autowired
     private CategoryRepository categoryRepository;
-    @Mock
+
+    @Autowired
     private CategoryService categoryService;
-    @InjectMocks
+
+    @Autowired
+    private MemberRepository memberRepository;
+
+    @Autowired
+    private PostRepository postRepository;
+
+    @Autowired
     private PostService postService;
+
+    @Autowired
+    private EntityManager em;
 
     private Member member;
 
-    private Post post1;
-    private Post post2;
-    private Post post3;
     private Category category1;
     private Category category2;
     private Category category3;
+    private Post post1;
+    private Post post2;
+    private Post post3;
 
     @BeforeEach
     void setUp() {
+
+        memberRepository.deleteAllInBatch();
+        categoryRepository.deleteAllInBatch();
+        postRepository.deleteAllInBatch();
+
+        em.createNativeQuery("ALTER TABLE member AUTO_INCREMENT = 1;").executeUpdate();
+        em.createNativeQuery("ALTER TABLE category AUTO_INCREMENT = 1;").executeUpdate();
+        em.createNativeQuery("ALTER TABLE post AUTO_INCREMENT = 1;").executeUpdate();
 
         member = Member.builder()
                 .username("username")
                 .password("password")
                 .roles("ROLE_ADMIN")
                 .build();
+        memberRepository.save(member);
+
         category1 = Category.builder()
                 .id(1L)
                 .category(null)
@@ -77,6 +89,7 @@ public class PostServiceTest {
                 .categoryName("category3")
                 .categoryDepth(0L)
                 .build();
+        categoryRepository.saveAll(List.of(category1, category2, category3));
 
         post1 = Post.builder()
                 .id(1L)
@@ -105,6 +118,7 @@ public class PostServiceTest {
                 .postPassword("password3")
                 .postSecurity(PostSecurity.PRIVATE)
                 .build();
+        postRepository.saveAll(List.of(post1, post2, post3));
     }
 
     @Test
@@ -120,15 +134,12 @@ public class PostServiceTest {
     }
 
     @Test
-    @DisplayName("잘못된 접근 제어를 입력시 예외가 발생한다.")
+    @DisplayName("잘못된 카테고리를 입력시 예외가 발생한다.")
     public void createPostInvalidCategoryName() {
         final CreatePostRequest createPostRequest = CreatePostRequest.builder()
                 .postSecurity("PUBLIC")
                 .categoryId(9999L)
                 .build();
-
-        given(categoryService.findByCategoryId(any()))
-                .willThrow(new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
 
         assertThatThrownBy(() -> postService.createPost(createPostRequest, member))
                 .isInstanceOf(BusinessException.class)
@@ -146,13 +157,11 @@ public class PostServiceTest {
                 .postSecurity("PUBLIC")
                 .build();
 
-        given(categoryService.findByCategoryId(any()))
-                .willReturn(category1);
-
-        given(postRepository.save(any()))
-                .willReturn(post1);
-
         assertThat(postService.createPost(createPostRequest, member))
-                .isEqualTo(1L);
+                .isEqualTo(4L);
+        final Post post = postRepository.findById(4L).get();
+        assertThat(post)
+                .extracting("id", "category", "member", "title", "content", "postPassword", "postSecurity")
+                .contains(4L, category1, member, "title1", "content1", "password1", PostSecurity.PUBLIC);
     }
 }

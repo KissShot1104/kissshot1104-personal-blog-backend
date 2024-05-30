@@ -9,14 +9,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import kissshot1104.personal.blog.global.BaseEntity;
+import kissshot1104.personal.blog.member.entity.Member;
 import kissshot1104.personal.blog.post.entity.Post;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Entity
@@ -28,8 +29,13 @@ public class PostImage extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id")
-    private Post post;
+    private Member member;
 
     private String imagePath;
+
+    @Builder
+    private PostImage(final Member member, final String imagePath) {
+        this.member = member;
+        this.imagePath = imagePath;
+    }
 }
