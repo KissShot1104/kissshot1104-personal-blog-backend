@@ -3,11 +3,9 @@ package kissshot1104.personal.blog.integration.post.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 
 import jakarta.persistence.EntityManager;
 import java.util.List;
-import java.util.Optional;
 import kissshot1104.personal.blog.category.entity.Category;
 import kissshot1104.personal.blog.category.repository.CategoryRepository;
 import kissshot1104.personal.blog.category.service.CategoryService;
@@ -15,7 +13,7 @@ import kissshot1104.personal.blog.global.exception.AuthException;
 import kissshot1104.personal.blog.global.exception.BusinessException;
 import kissshot1104.personal.blog.member.entity.Member;
 import kissshot1104.personal.blog.member.repository.MemberRepository;
-import kissshot1104.personal.blog.post.dto.request.AuthenticationData;
+import kissshot1104.personal.blog.post.dto.request.AuthenticationDataRequest;
 import kissshot1104.personal.blog.post.dto.request.CreatePostRequest;
 import kissshot1104.personal.blog.post.dto.response.FindPostResponse;
 import kissshot1104.personal.blog.post.entity.Post;
@@ -181,11 +179,11 @@ public class PostServiceTest {
                 .roles("ROLE_USER")
                 .build();
 
-        final AuthenticationData authenticationData = AuthenticationData.builder()
+        final AuthenticationDataRequest authenticationDataRequest = AuthenticationDataRequest.builder()
                 .postPassword("password1")
                 .build();
 
-        assertThatThrownBy(() -> postService.findPost(2L, authenticationData, member2))
+        assertThatThrownBy(() -> postService.findPost(2L, authenticationDataRequest, member2))
                 .isInstanceOf(AuthException.class)
                 .hasMessage("권한이 없는 사용자입니다.");
     }
@@ -240,12 +238,12 @@ public class PostServiceTest {
                 .roles("ROLE_USER")
                 .build();
 
-        final AuthenticationData authenticationData = AuthenticationData.builder()
+        final AuthenticationDataRequest authenticationDataRequest = AuthenticationDataRequest.builder()
                 .postPassword("password2")
                 .build();
 
         final FindPostResponse findPostResponse =
-                postService.findPost(2L, authenticationData, member2);
+                postService.findPost(2L, authenticationDataRequest, member2);
 
         assertThat(findPostResponse)
                 .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
