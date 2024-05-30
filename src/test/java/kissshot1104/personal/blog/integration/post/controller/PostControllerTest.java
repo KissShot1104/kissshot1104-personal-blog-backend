@@ -1,6 +1,8 @@
 package kissshot1104.personal.blog.integration.post.controller;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
@@ -11,16 +13,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import kissshot1104.personal.blog.category.entity.Category;
 import kissshot1104.personal.blog.category.repository.CategoryRepository;
+import kissshot1104.personal.blog.global.exception.AuthException;
 import kissshot1104.personal.blog.global.security.prinipal.MemberPrincipal;
 import kissshot1104.personal.blog.member.entity.Member;
 import kissshot1104.personal.blog.member.repository.MemberRepository;
+import kissshot1104.personal.blog.post.dto.AuthenticationDataDto;
 import kissshot1104.personal.blog.post.dto.CreatePostDto;
+import kissshot1104.personal.blog.post.dto.response.FindPostResponse;
 import kissshot1104.personal.blog.post.entity.Post;
+import kissshot1104.personal.blog.post.entity.PostSecurity;
 import kissshot1104.personal.blog.post.repository.PostRepository;
 import kissshot1104.personal.blog.post.service.PostService;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,15 +78,17 @@ public class PostControllerTest {
     private PasswordEncoder passwordEncoder;
 
     private Member member;
+    private Member member2;
     private UserDetails user;
+    private UserDetails user2;
 
     private Category category1;
     private Category category2;
     private Category category3;
 
-    private Post post1;
-    private Post post2;
-    private Post post3;
+    private Post publicPost;
+    private Post protectedPost;
+    private Post privatePost;
 
     private CreatePostDto createPostDto1;
     private CreatePostDto createPostDto2;
@@ -118,8 +127,14 @@ public class PostControllerTest {
                 .username("username")
                 .password(passwordEncoder.encode("1"))
                 .build();
-        memberRepository.save(member);
+        member2 = Member.builder()
+                .nickName("nickName2")
+                .username("username2")
+                .password(passwordEncoder.encode("2"))
+                .build();
+        memberRepository.saveAll(List.of(member, member2));
         user = memberPrincipal.loadUserByUsername("username");
+        user2 = memberPrincipal.loadUserByUsername("username2");
 
         createPostDto1 = CreatePostDto.builder()
                 .categoryId(1L)
@@ -142,6 +157,35 @@ public class PostControllerTest {
                 .postPassword("Test Post Password3")
                 .postSecurity("PRIVATE")
                 .build();
+
+        publicPost = Post.builder()
+                .id(1L)
+                .category(category1)
+                .member(member)
+                .title("title1")
+                .content("content1")
+                .postPassword("password1")
+                .postSecurity(PostSecurity.PUBLIC)
+                .build();
+        protectedPost = Post.builder()
+                .id(2L)
+                .category(category2)
+                .member(member)
+                .title("title2")
+                .content("content2")
+                .postPassword("password2")
+                .postSecurity(PostSecurity.PROTECTED)
+                .build();
+        privatePost = Post.builder()
+                .id(3L)
+                .category(category3)
+                .member(member)
+                .title("title3")
+                .content("content3")
+                .postPassword("password3")
+                .postSecurity(PostSecurity.PRIVATE)
+                .build();
+        postRepository.saveAll(List.of(publicPost, protectedPost, privatePost));
     }
 
     //    @Test
@@ -304,6 +348,112 @@ public class PostControllerTest {
                         )
                 ))
                 .andExpect(status().isCreated())
-                .andExpect(header().stringValues("Location", "/post/1"));
+                .andExpect(header().stringValues("Location", "/post/4"));
+    }
+
+    @Test
+    @DisplayName("작성자가 아니면 protected게시글을 조회 시 비밀번호가 틀리면 예외가 발생한다.")
+    public void authExceptionWhenInvalidPassword() throws Exception {
+        final AuthenticationDataDto authenticationDataDto = AuthenticationDataDto.builder()
+                .postPassword("invalid Password")
+                .build();
+
+        UserDetails user2 = memberPrincipal.loadUserByUsername("username2");
+
+        mock.perform(post("/api/v1/post/{postId}", 2L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(authenticationDataDto))
+                .with(SecurityMockMvcRequestPostProcessors.user(user2)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpectAll(
+                        jsonPath("$.message").value("권한이 없는 사용자입니다."),
+                        jsonPath("$.code").value("AU_002")
+                );
+    }
+
+    @Test
+    @DisplayName("private 게시글은 작성자가 아니면 조회할 수 없다.")
+    public void canNotViewPrivatePostUnlessAuthor() throws Exception {
+        final AuthenticationDataDto authenticationDataDto = AuthenticationDataDto.builder()
+                .build();
+
+        mock.perform(post("/api/v1/post/{postId}", 3L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(authenticationDataDto))
+                        .with(SecurityMockMvcRequestPostProcessors.user(user2)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpectAll(
+                        jsonPath("$.message").value("권한이 없는 사용자입니다."),
+                        jsonPath("$.code").value("AU_002")
+                );
+    }
+
+    @Test
+    @DisplayName("public 게시글을 조회한다.")
+    public void findPublicPostTest() throws Exception {
+        final AuthenticationDataDto authenticationDataDto = AuthenticationDataDto.builder()
+                .build();
+
+        mock.perform(post("/api/v1/post/{postId}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(authenticationDataDto))
+                        .with(SecurityMockMvcRequestPostProcessors.user(user2)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpectAll(
+                        jsonPath("$.postId").value(1),
+                        jsonPath("$.category").value("Test Category Name1"),
+                        jsonPath("$.nickName").value("nickName1"),
+                        jsonPath("$.title").value("title1"),
+                        jsonPath("$.content").value("content1"),
+                        jsonPath("$.postSecurity").value("PUBLIC")
+                );
+    }
+
+    @Test
+    @DisplayName("protected 게시글을 조회한다.")
+    public void findProtectedPostTest() throws Exception {
+        final AuthenticationDataDto authenticationDataDto = AuthenticationDataDto.builder()
+                .postPassword("password2")
+                .build();
+
+        mock.perform(post("/api/v1/post/{postId}", 2L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(authenticationDataDto))
+                        .with(SecurityMockMvcRequestPostProcessors.user(user2)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpectAll(
+                        jsonPath("$.postId").value(2),
+                        jsonPath("$.category").value("Test Category Name2"),
+                        jsonPath("$.nickName").value("nickName1"),
+                        jsonPath("$.title").value("title2"),
+                        jsonPath("$.content").value("content2"),
+                        jsonPath("$.postSecurity").value("PROTECTED")
+                );
+    }
+
+    @Test
+    @DisplayName("private 게시글을 조회한다.")
+    public void findPrivatePostTest() throws Exception {
+        final AuthenticationDataDto authenticationDataDto = AuthenticationDataDto.builder()
+                .build();
+
+        mock.perform(post("/api/v1/post/{postId}", 3L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(authenticationDataDto))
+                        .with(SecurityMockMvcRequestPostProcessors.user(user)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpectAll(
+                        jsonPath("$.postId").value(3),
+                        jsonPath("$.category").value("Test Category Name3"),
+                        jsonPath("$.nickName").value("nickName1"),
+                        jsonPath("$.title").value("title3"),
+                        jsonPath("$.content").value("content3"),
+                        jsonPath("$.postSecurity").value("PRIVATE")
+                );
     }
 }
