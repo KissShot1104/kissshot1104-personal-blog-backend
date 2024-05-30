@@ -6,7 +6,7 @@ import kissshot1104.personal.blog.global.exception.AuthException;
 import kissshot1104.personal.blog.global.exception.BusinessException;
 import kissshot1104.personal.blog.global.exception.ErrorCode;
 import kissshot1104.personal.blog.member.entity.Member;
-import kissshot1104.personal.blog.post.dto.request.AuthenticationData;
+import kissshot1104.personal.blog.post.dto.request.AuthenticationDataRequest;
 import kissshot1104.personal.blog.post.dto.request.CreatePostRequest;
 import kissshot1104.personal.blog.post.dto.response.FindPostResponse;
 import kissshot1104.personal.blog.post.entity.Post;
@@ -40,14 +40,14 @@ public class PostService {
         return savedPost.getId();
     }
 
-    public FindPostResponse findPost(final Long postId, final AuthenticationData request, final Member member) {
+    public FindPostResponse findPost(final Long postId, final AuthenticationDataRequest request, final Member member) {
         final Post post = findByPostId(postId);
         checkAuthentication(post, request, member);
         final FindPostResponse response = FindPostResponse.of(post);
         return response;
     }
 
-    private void checkAuthentication(final Post post, final AuthenticationData request, final Member member) {
+    private void checkAuthentication(final Post post, final AuthenticationDataRequest request, final Member member) {
         if (post.getPostSecurity() == PostSecurity.PRIVATE &&
                 post.getMember() != member) {
             throw new AuthException(ErrorCode.UNAUTHORIZED_USER);

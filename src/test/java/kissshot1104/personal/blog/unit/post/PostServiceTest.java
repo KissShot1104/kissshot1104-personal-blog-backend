@@ -14,7 +14,7 @@ import kissshot1104.personal.blog.global.exception.AuthException;
 import kissshot1104.personal.blog.global.exception.BusinessException;
 import kissshot1104.personal.blog.global.exception.ErrorCode;
 import kissshot1104.personal.blog.member.entity.Member;
-import kissshot1104.personal.blog.post.dto.request.AuthenticationData;
+import kissshot1104.personal.blog.post.dto.request.AuthenticationDataRequest;
 import kissshot1104.personal.blog.post.dto.request.CreatePostRequest;
 import kissshot1104.personal.blog.post.dto.response.FindPostResponse;
 import kissshot1104.personal.blog.post.entity.Post;
@@ -164,14 +164,14 @@ public class PostServiceTest {
                 .roles("ROLE_USER")
                 .build();
 
-        final AuthenticationData authenticationData = AuthenticationData.builder()
+        final AuthenticationDataRequest authenticationDataRequest = AuthenticationDataRequest.builder()
                 .postPassword("password1")
                 .build();
 
         given(postRepository.findById(any()))
                 .willReturn(Optional.of(protectedPost));
 
-        assertThatThrownBy(() -> postService.findPost(2L, authenticationData, member2))
+        assertThatThrownBy(() -> postService.findPost(2L, authenticationDataRequest, member2))
                 .isInstanceOf(AuthException.class)
                 .hasMessage("권한이 없는 사용자입니다.");
     }
@@ -236,7 +236,7 @@ public class PostServiceTest {
                 .roles("ROLE_USER")
                 .build();
 
-        final AuthenticationData authenticationData = AuthenticationData.builder()
+        final AuthenticationDataRequest authenticationDataRequest = AuthenticationDataRequest.builder()
                 .postPassword("password2")
                 .build();
 
@@ -244,7 +244,7 @@ public class PostServiceTest {
                 .willReturn(Optional.of(protectedPost));
 
         final FindPostResponse findPostResponse =
-                postService.findPost(2L, authenticationData, member2);
+                postService.findPost(2L, authenticationDataRequest, member2);
 
         assertThat(findPostResponse)
                 .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
