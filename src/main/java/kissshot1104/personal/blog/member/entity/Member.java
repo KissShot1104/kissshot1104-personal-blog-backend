@@ -29,14 +29,19 @@ public class Member extends BaseEntity {
     private String username;
     @Column(nullable = false)
     private String password;
+    @Column(nullable = false, unique = true)
+    private String nickName;
     private String roles;
 
     @Builder
     private Member(final String username,
                    final String password,
-                   final String roles) {
+                   final String nickName,
+                   final String roles
+                   ) {
         this.username = username;
         this.password = password;
+        this.nickName = nickName;
         this.roles = roles;
     }
 }
