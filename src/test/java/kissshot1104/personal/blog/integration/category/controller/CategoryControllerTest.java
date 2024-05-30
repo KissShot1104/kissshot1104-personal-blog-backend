@@ -105,6 +105,7 @@ class CategoryControllerTest {
         categoryRepository.saveAll(List.of(category1, category2, category3));
 
         member = Member.builder()
+                .nickName("nickName1")
                 .username("username")
                 .password(passwordEncoder.encode("1"))
                 .build();
