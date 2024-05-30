@@ -1,5 +1,6 @@
 package kissshot1104.personal.blog.post.service;
 
+import java.util.Objects;
 import kissshot1104.personal.blog.category.entity.Category;
 import kissshot1104.personal.blog.category.service.CategoryService;
 import kissshot1104.personal.blog.global.exception.AuthException;
@@ -55,7 +56,7 @@ public class PostService {
 
         if (post.getPostSecurity() == PostSecurity.PROTECTED &&
         post.getMember() != member) {
-            if (post.getPostPassword() != request.postPassword()) {
+            if (!Objects.equals(post.getPostPassword(), request.postPassword())) {
                 throw new AuthException(ErrorCode.UNAUTHORIZED_USER);
             }
         }
