@@ -28,6 +28,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -291,9 +292,9 @@ public class PostServiceTest {
     @Test
     @DisplayName("모든 게시글을 조회한다.")
     public void findAll() {
-
-        final Page<FindPostResponse> response = postService.findAllPost(0, null, null, null, member1);
-        assertThat(response.getContent())
+        final Pageable pageable = PageRequest.of(0, 10, Sort.by("createdDate").descending());
+        final Page<FindPostResponse> responses = postService.findAllPost(null, null, pageable, member1);
+        assertThat(responses.getContent())
                 .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
                 .contains(tuple(1L, "category1", "nickName1", "title1", "content1", "PUBLIC"),
                         tuple(2L, "category2", "nickName1", "title2", "content2", "PROTECTED"),
@@ -305,12 +306,8 @@ public class PostServiceTest {
     @Test
     @DisplayName("조회 가능한 모든 게시글 중 제목을 or검색한다.")
     public void searchPostsByTitleWithOrCondition() {
-        final Page<FindPostResponse> responses =
-                postService.findAllPost(0,
-                        null,
-                        "title",
-                        "1",
-                        member1);
+        final Pageable pageable = PageRequest.of(0, 10, Sort.by("createdDate").descending());
+        final Page<FindPostResponse> responses = postService.findAllPost("1", "title", pageable, member1);
 
         assertThat(responses.getContent())
                 .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
@@ -320,12 +317,8 @@ public class PostServiceTest {
     @Test
     @DisplayName("모든 게시글 중 내용(본문)을 or검색한다.")
     public void searchPostsByContentWithOrCondition() {
-        final Page<FindPostResponse> responses =
-                postService.findAllPost(0,
-                        null,
-                        "content",
-                        "1",
-                        member1);
+        final Pageable pageable = PageRequest.of(0, 10, Sort.by("createdDate").descending());
+        final Page<FindPostResponse> responses = postService.findAllPost("1", "content", pageable, member1);
 
         assertThat(responses.getContent())
                 .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
@@ -335,12 +328,8 @@ public class PostServiceTest {
     @Test
     @DisplayName("조회 가능한 게시글 중 작성자를 or검색한다.")
     public void searchPostsByAuthorWithOrCondition() {
-        final Page<FindPostResponse> responses =
-                postService.findAllPost(0,
-                        null,
-                        "author",
-                        "1",
-                        member1);
+        final Pageable pageable = PageRequest.of(0, 10, Sort.by("createdDate").descending());
+        final Page<FindPostResponse> responses = postService.findAllPost("1", "author", pageable, member1);
 
         assertThat(responses.getContent())
                 .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
