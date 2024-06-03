@@ -2,6 +2,7 @@ package kissshot1104.personal.blog.post.controller;
 
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
 import kissshot1104.personal.blog.global.security.prinipal.CurrentMember;
 import kissshot1104.personal.blog.member.entity.Member;
 import kissshot1104.personal.blog.post.dto.AuthenticationDataDto;
@@ -12,11 +13,15 @@ import kissshot1104.personal.blog.post.dto.request.CreatePostRequest;
 import kissshot1104.personal.blog.post.dto.response.FindPostResponse;
 import kissshot1104.personal.blog.post.service.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -41,5 +46,15 @@ public class PostController {
                 authenticationDataDto.toAuthenticationDataRequest();
         FindPostDto response = FindPostDto.of(postService.findPost(postId, request, member));
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<FindPostDto>> findAll(@RequestParam("kw") String kw,
+                                                     @RequestParam("kw-type") String kwType,
+                                                     Pageable pageable,
+                                                     @CurrentMember Member member) {
+        final Page<FindPostResponse> postResponses = postService.findAllPost(kw, kwType, pageable, member);
+        final Page<FindPostDto> findPostDtos = FindPostDto.listOf(postResponses);
+        return ResponseEntity.ok(findPostDtos);
     }
 }
