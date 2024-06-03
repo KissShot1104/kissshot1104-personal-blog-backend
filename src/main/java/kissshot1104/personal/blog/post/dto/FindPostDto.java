@@ -13,12 +13,12 @@ public record FindPostDto(Long postId,
 
     public static FindPostDto of(final FindPostResponse response) {
         final FindPostDto findPostDto = FindPostDto.builder()
-                .postId(response.postId())
-                .category(response.category())
-                .nickName(response.nickName())
-                .title(response.title())
-                .content(response.content())
-                .postSecurity(response.postSecurity())
+                .postId(response.getPostId())
+                .category(response.getCategory())
+                .nickName(response.getNickName())
+                .title(response.getTitle())
+                .content(response.getContent())
+                .postSecurity(response.getPostSecurity())
                 .build();
         return findPostDto;
     }
