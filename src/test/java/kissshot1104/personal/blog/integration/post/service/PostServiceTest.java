@@ -2,7 +2,7 @@ package kissshot1104.personal.blog.integration.post.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 import jakarta.persistence.EntityManager;
 import java.util.List;
@@ -25,6 +25,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -48,14 +51,17 @@ public class PostServiceTest {
     @Autowired
     private EntityManager em;
 
-    private Member member;
-
+    private Member member1;
+    private Member member2;
     private Category category1;
     private Category category2;
     private Category category3;
-    private Post publicPost;
-    private Post protectedPost;
-    private Post privatePost;
+    private Post publicPost1;
+    private Post protectedPost1;
+    private Post privatePost1;
+    private Post publicPost2;
+    private Post protectedPost2;
+    private Post privatePost2;
 
     @BeforeEach
     void setUp() {
@@ -68,13 +74,19 @@ public class PostServiceTest {
         em.createNativeQuery("ALTER TABLE category AUTO_INCREMENT = 1;").executeUpdate();
         em.createNativeQuery("ALTER TABLE post AUTO_INCREMENT = 1;").executeUpdate();
 
-        member = Member.builder()
+        member1 = Member.builder()
                 .nickName("nickName1")
                 .username("username")
                 .password("password")
-                .roles("ROLE_ADMIN")
+                .roles("ROLE_USER")
                 .build();
-        memberRepository.save(member);
+        member2 = Member.builder()
+                .nickName("nickName2")
+                .username("username2")
+                .password("password2")
+                .roles("ROLE_USER")
+                .build();
+        memberRepository.saveAll(List.of(member1, member2));
 
         category1 = Category.builder()
                 .id(1L)
@@ -96,34 +108,56 @@ public class PostServiceTest {
                 .build();
         categoryRepository.saveAll(List.of(category1, category2, category3));
 
-        publicPost = Post.builder()
-                .id(1L)
+        publicPost1 = Post.builder()
                 .category(category1)
-                .member(member)
+                .member(member1)
                 .title("title1")
                 .content("content1")
                 .postPassword("password1")
                 .postSecurity(PostSecurity.PUBLIC)
                 .build();
-        protectedPost = Post.builder()
-                .id(2L)
+        protectedPost1 = Post.builder()
                 .category(category2)
-                .member(member)
+                .member(member1)
                 .title("title2")
                 .content("content2")
                 .postPassword("password2")
                 .postSecurity(PostSecurity.PROTECTED)
                 .build();
-        privatePost = Post.builder()
-                .id(3L)
+        privatePost1 = Post.builder()
                 .category(category3)
-                .member(member)
+                .member(member1)
                 .title("title3")
                 .content("content3")
                 .postPassword("password3")
                 .postSecurity(PostSecurity.PRIVATE)
                 .build();
-        postRepository.saveAll(List.of(publicPost, protectedPost, privatePost));
+        publicPost2 = Post.builder()
+                .category(category1)
+                .member(member2)
+                .title("title4")
+                .content("content4")
+                .postPassword("password4")
+                .postSecurity(PostSecurity.PUBLIC)
+                .build();
+        protectedPost2 = Post.builder()
+                .category(category2)
+                .member(member2)
+                .title("title5")
+                .content("content5")
+                .postPassword("password5")
+                .postSecurity(PostSecurity.PROTECTED)
+                .build();
+        privatePost2 = Post.builder()
+                .category(category3)
+                .member(member2)
+                .title("title6")
+                .content("content6")
+                .postPassword("password6")
+                .postSecurity(PostSecurity.PRIVATE)
+                .build();
+        postRepository.saveAll(List.of(publicPost1, protectedPost1, privatePost1,
+                publicPost2, protectedPost2, privatePost2));
     }
 
     @Test
@@ -133,7 +167,7 @@ public class PostServiceTest {
                 .postSecurity("invalid Security")
                 .build();
 
-        assertThatThrownBy(() -> postService.createPost(createPostRequest, member))
+        assertThatThrownBy(() -> postService.createPost(createPostRequest, member1))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("존재하지 않는 값을 요청했습니다.");
     }
@@ -146,7 +180,7 @@ public class PostServiceTest {
                 .categoryId(9999L)
                 .build();
 
-        assertThatThrownBy(() -> postService.createPost(createPostRequest, member))
+        assertThatThrownBy(() -> postService.createPost(createPostRequest, member1))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("지정한 Entity를 찾을 수 없습니다.");
     }
@@ -162,22 +196,17 @@ public class PostServiceTest {
                 .postSecurity("PUBLIC")
                 .build();
 
-        assertThat(postService.createPost(createPostRequest, member))
-                .isEqualTo(4L);
-        final Post post = postRepository.findById(4L).get();
+        assertThat(postService.createPost(createPostRequest, member1))
+                .isEqualTo(7L);
+        final Post post = postRepository.findById(7L).get();
         assertThat(post)
                 .extracting("id", "category", "member", "title", "content", "postPassword", "postSecurity")
-                .contains(4L, category1, member, "title1", "content1", "password1", PostSecurity.PUBLIC);
+                .contains(7L, category1, member1, "title1", "content1", "password1", PostSecurity.PUBLIC);
     }
 
     @Test
     @DisplayName("protected게시글을 조회 시 비밀번호가 틀리면 예외가 발생한다.")
     public void authExceptionWhenInvalidPassword() {
-        final Member member2 = Member.builder()
-                .username("username2")
-                .password("password2")
-                .roles("ROLE_USER")
-                .build();
 
         final AuthenticationDataRequest authenticationDataRequest = AuthenticationDataRequest.builder()
                 .postPassword("password1")
@@ -192,7 +221,7 @@ public class PostServiceTest {
     @DisplayName("protected 게시글을 조회 시 작성자는 비밀번호를 입력하지 않아도 된다.")
     public void findPostIfAuthorOrValidPassword() {
         final FindPostResponse findPostResponse =
-                postService.findPost(2L, null, member);
+                postService.findPost(2L, null, member1);
 
         assertThat(findPostResponse)
                 .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
@@ -253,9 +282,70 @@ public class PostServiceTest {
     @Test
     @DisplayName("private 게시글을 조회한다.")
     public void findPrivatePostTest() {
-        final FindPostResponse response = postService.findPost(3L, null, member);
+        final FindPostResponse response = postService.findPost(3L, null, member1);
         assertThat(response)
                 .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
                 .contains(3L, "category3", "nickName1", "title3", "content3", "PRIVATE");
+    }
+
+    @Test
+    @DisplayName("모든 게시글을 조회한다.")
+    public void findAll() {
+
+        final Page<FindPostResponse> response = postService.findAllPost(0, null, null, null, member1);
+        assertThat(response.getContent())
+                .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
+                .contains(tuple(1L, "category1", "nickName1", "title1", "content1", "PUBLIC"),
+                        tuple(2L, "category2", "nickName1", "title2", "content2", "PROTECTED"),
+                        tuple(3L, "category3", "nickName1", "title3", "content3", "PRIVATE"),
+                        tuple(4L, "category1", "nickName2", "title4", "content4", "PUBLIC"),
+                        tuple(5L, "category2", "nickName2", "title5", "content5", "PROTECTED"));
+    }
+
+    @Test
+    @DisplayName("조회 가능한 모든 게시글 중 제목을 or검색한다.")
+    public void searchPostsByTitleWithOrCondition() {
+        final Page<FindPostResponse> responses =
+                postService.findAllPost(0,
+                        null,
+                        "title",
+                        "1",
+                        member1);
+
+        assertThat(responses.getContent())
+                .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
+                .contains(tuple(1L, "category1", "nickName1", "title1", "content1", "PUBLIC"));
+    }
+
+    @Test
+    @DisplayName("모든 게시글 중 내용(본문)을 or검색한다.")
+    public void searchPostsByContentWithOrCondition() {
+        final Page<FindPostResponse> responses =
+                postService.findAllPost(0,
+                        null,
+                        "content",
+                        "1",
+                        member1);
+
+        assertThat(responses.getContent())
+                .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
+                .contains(tuple(1L, "category1", "nickName1", "title1", "content1", "PUBLIC"));
+    }
+
+    @Test
+    @DisplayName("조회 가능한 게시글 중 작성자를 or검색한다.")
+    public void searchPostsByAuthorWithOrCondition() {
+        final Page<FindPostResponse> responses =
+                postService.findAllPost(0,
+                        null,
+                        "author",
+                        "1",
+                        member1);
+
+        assertThat(responses.getContent())
+                .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
+                .contains(tuple(1L, "category1", "nickName1", "title1", "content1", "PUBLIC"),
+                        tuple(2L, "category2", "nickName1", "title2", "content2", "PROTECTED"),
+                        tuple(3L, "category3", "nickName1", "title3", "content3", "PRIVATE"));
     }
 }
