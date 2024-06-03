@@ -14,6 +14,10 @@ import kissshot1104.personal.blog.post.entity.Post;
 import kissshot1104.personal.blog.post.entity.PostSecurity;
 import kissshot1104.personal.blog.post.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,7 +59,7 @@ public class PostService {
         }
 
         if (post.getPostSecurity() == PostSecurity.PROTECTED &&
-        post.getMember() != member) {
+                post.getMember() != member) {
             if (!Objects.equals(post.getPostPassword(), request.postPassword())) {
                 throw new AuthException(ErrorCode.UNAUTHORIZED_USER);
             }
@@ -66,5 +70,15 @@ public class PostService {
         final Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
         return post;
+    }
+
+    public Page<FindPostResponse> findAllPost(final Integer page,
+                                              final String sortCode,
+                                              final String kwType,
+                                              final String kw,
+                                              final Member member) {
+        final Pageable pageable = PageRequest.of(page, 10, Sort.by("createdDate").descending());
+        final Page<FindPostResponse> responses = postRepository.findAllByKeyword(sortCode, kwType, kw, pageable, member);
+        return responses;
     }
 }
