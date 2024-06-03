@@ -15,9 +15,7 @@ import kissshot1104.personal.blog.post.entity.PostSecurity;
 import kissshot1104.personal.blog.post.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,20 +70,11 @@ public class PostService {
         return post;
     }
 
-//    public Page<FindPostResponse> findAllPost(final Integer page,
-//                                              final String sortCode,
-//                                              final String kwType,
-//                                              final String kw,
-//                                              final Member member) {
-//        final Pageable pageable = PageRequest.of(page, 10, Sort.by("createdDate").descending());
-//        final Page<FindPostResponse> responses = postRepository.findAllByKeyword(sortCode, kwType, kw, pageable, member);
-//        return responses;
-//    }
-public Page<FindPostResponse> findAllPost(final String kw,
-                                          final String kwType,
-                                          final Pageable pageable,
-                                          final Member member) {
-    final Page<FindPostResponse> responses = postRepository.findAllByKeyword(kw, kwType, pageable, member);
-    return responses;
-}
+    public Page<FindPostResponse> findAllPost(final String kw,
+                                              final String kwType,
+                                              final Pageable pageable,
+                                              final Member member) {
+        final Page<FindPostResponse> responses = postRepository.findAllByKeyword(kw, kwType, pageable, member);
+        return responses;
+    }
 }
