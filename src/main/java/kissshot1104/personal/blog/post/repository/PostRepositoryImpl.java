@@ -17,6 +17,8 @@ import kissshot1104.personal.blog.post.entity.PostSecurity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Order;
 
 public class PostRepositoryImpl implements PostRepositoryCustom {
 
@@ -29,10 +31,39 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         this.queryFactory = new JPAQueryFactory(em);
     }
 
+    //    @Override
+//    public Page<FindPostResponse> findAllByKeyword(final String kw,
+//                                                   final Pageable pageable,
+//                                                   final Member member) {
+//
+//        final List<FindPostResponse> postResponses = queryFactory
+//                .select(new QFindPostResponse(
+//                        post.id,
+//                        post.category.categoryName,
+//                        post.member.nickName,
+//                        post.title,
+//                        post.content,
+//                        post.postSecurity.stringValue()
+//                ))
+//                .from(post)
+//                .groupBy(post.id)
+//                .where(buildSearchPredicate(kwType, kw))
+//                .where(isNotPrivatePost()
+//                        .or(isPrivatePost()
+//                                .and(isPostOwnedByMember(member))))
+//                .distinct()
+//                .orderBy(sortType(sortCode))
+//                .offset(pageable.getOffset())
+//                .limit(pageable.getPageSize())
+//                .fetch();
+//
+//        final long total = postResponses.size();
+//
+//        return new PageImpl<>(postResponses, pageable, total);
+//    }
     @Override
-    public Page<FindPostResponse> findAllByKeyword(final String sortCode,
+    public Page<FindPostResponse> findAllByKeyword(final String kw,
                                                    final String kwType,
-                                                   final String kw,
                                                    final Pageable pageable,
                                                    final Member member) {
 
@@ -52,7 +83,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                         .or(isPrivatePost()
                                 .and(isPostOwnedByMember(member))))
                 .distinct()
-                .orderBy(sortType(sortCode))
+                .orderBy(determineSortOrder(pageable.getSort()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -136,21 +167,24 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         return post.member.eq(member);
     }
 
-    public OrderSpecifier<?> sortType(String sortCodeCond) {
-        if (sortCodeCond == null || sortCodeCond.isEmpty() || sortCodeCond.equals("createdDateDesc")) {
+    public OrderSpecifier<?> determineSortOrder(final Sort sort) {
+        if (sort.isUnsorted()) {
             return post.createdDate.desc();
         }
-        if (sortCodeCond.equals("createdDateAsc")) {
-            return post.createdDate.asc();
+
+        OrderSpecifier<?> orderSpecifier = post.createdDate.desc(); // 기본 정렬
+
+        for (final Order order : sort) {
+            final String property = order.getProperty();
+            final String direction = order.getDirection().name();
+
+            if ("createdDate".equals(property)) {
+                orderSpecifier = "ASC".equals(direction) ? post.createdDate.asc() : post.createdDate.desc();
+            } else if ("id".equals(property)) {
+                orderSpecifier = "ASC".equals(direction) ? post.id.asc() : post.id.desc();
+            }
         }
-        if (sortCodeCond.equals("idDesc")) {
-            return post.id.desc();
-        }
-        if (sortCodeCond.equals("idAsc")) {
-            return post.id.asc();
-        }
-        return post.createdDate.desc();
+
+        return orderSpecifier;
     }
-
-
 }

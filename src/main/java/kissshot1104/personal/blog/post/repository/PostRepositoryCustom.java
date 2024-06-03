@@ -7,9 +7,8 @@ import org.springframework.data.domain.Pageable;
 
 public interface PostRepositoryCustom {
 
-    Page<FindPostResponse> findAllByKeyword(final String sortCode,
+    Page<FindPostResponse> findAllByKeyword(final String kw,
                                             final String kwType,
-                                            final String kw,
                                             final Pageable pageable,
                                             final Member requester);
 }
