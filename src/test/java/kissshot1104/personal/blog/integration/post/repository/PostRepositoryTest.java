@@ -21,6 +21,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -148,10 +149,9 @@ public class PostRepositoryTest {
     @Test
     @DisplayName("private 게시글은 작성자가 아니면 조회할 수 없다.")
     public void canNotViewPrivatePostUnlessAuthor() {
-        final Pageable pageable = PageRequest.of(0, 10);
+        final Pageable pageable = PageRequest.of(0, 10, Sort.by("createdDate").descending());
         final Page<FindPostResponse> responses =
                 postRepository.findAllByKeyword(null,
-                        null,
                         null,
                         pageable,
                         member1);
@@ -168,10 +168,9 @@ public class PostRepositoryTest {
     @Test
     @DisplayName("private 게시글의 작성자는 자신의 private게시글은 조회할 수 있다.")
     public void canViewPrivatePostUnlessAuthor() {
-        final Pageable pageable = PageRequest.of(0, 10);
+        final Pageable pageable = PageRequest.of(0, 10, Sort.by("createdDate").descending());
         final Page<FindPostResponse> responses =
                 postRepository.findAllByKeyword(null,
-                        null,
                         null,
                         pageable,
                         member1);
@@ -188,11 +187,10 @@ public class PostRepositoryTest {
     @Test
     @DisplayName("조회 가능한 모든 게시글 중 제목을 or검색한다.")
     public void searchPostsByTitleWithOrCondition() {
-        final Pageable pageable = PageRequest.of(0, 10);
+        final Pageable pageable = PageRequest.of(0, 10, Sort.by("createdDate").descending());
         final Page<FindPostResponse> responses =
-                postRepository.findAllByKeyword(null,
+                postRepository.findAllByKeyword("1",
                         "title",
-                        "1",
                         pageable,
                         member1);
 
@@ -204,11 +202,10 @@ public class PostRepositoryTest {
     @Test
     @DisplayName("모든 게시글 중 내용(본문)을 or검색한다.")
     public void searchPostsByContentWithOrCondition() {
-        final Pageable pageable = PageRequest.of(0, 10);
+        final Pageable pageable = PageRequest.of(0, 10, Sort.by("createdDate").descending());
         final Page<FindPostResponse> responses =
-                postRepository.findAllByKeyword(null,
+                postRepository.findAllByKeyword("1",
                         "content",
-                        "1",
                         pageable,
                         member1);
 
@@ -220,11 +217,10 @@ public class PostRepositoryTest {
     @Test
     @DisplayName("조회 가능한 게시글 중 작성자를 or검색한다.")
     public void searchPostsByAuthorWithOrCondition() {
-        final Pageable pageable = PageRequest.of(0, 10);
+        final Pageable pageable = PageRequest.of(0, 10, Sort.by("createdDate").descending());
         final Page<FindPostResponse> responses =
-                postRepository.findAllByKeyword(null,
+                postRepository.findAllByKeyword("1",
                         "author",
-                        "1",
                         pageable,
                         member1);
 
