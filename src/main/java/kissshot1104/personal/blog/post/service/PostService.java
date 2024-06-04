@@ -7,7 +7,6 @@ import kissshot1104.personal.blog.global.exception.AuthException;
 import kissshot1104.personal.blog.global.exception.BusinessException;
 import kissshot1104.personal.blog.global.exception.ErrorCode;
 import kissshot1104.personal.blog.member.entity.Member;
-import kissshot1104.personal.blog.member.repository.MemberRepository;
 import kissshot1104.personal.blog.member.service.MemberService;
 import kissshot1104.personal.blog.post.dto.request.AuthenticationDataRequest;
 import kissshot1104.personal.blog.post.dto.request.CreatePostRequest;
@@ -89,5 +88,13 @@ public class PostService {
         final Post post = findByPostId(postId);
         memberService.checkAuthorizedMember(post.getMember(), member);
         post.modifyPost(request);
+    }
+
+    @Transactional
+    public void deletePost(final Long postId,
+                           final Member member) {
+        final Post post = findByPostId(postId);
+        memberService.checkAuthorizedMember(post.getMember(), member);
+        postRepository.delete(post);
     }
 }
