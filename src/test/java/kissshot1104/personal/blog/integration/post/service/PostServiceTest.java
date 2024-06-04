@@ -368,7 +368,7 @@ public class PostServiceTest {
                 .postSecurity("PUBLIC")
                 .build();
 
-        assertThatThrownBy(() -> postService.modifyPost(1L, postModifyRequest, member2))
+        assertThatThrownBy(() -> postService.modifyPost(9999L, postModifyRequest, member2))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("지정한 Entity를 찾을 수 없습니다.");
     }
