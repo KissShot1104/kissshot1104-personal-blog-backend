@@ -14,6 +14,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWit
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -632,7 +633,7 @@ public class PostControllerTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 게시글은 수정할 수 없다.")
+    @DisplayName("게시글을 수정한다.")
     public void modifyPostTest() throws Exception {
         final PostModifyRequest postModifyRequest = PostModifyRequest.builder()
                 .title("modifyTitle1")
@@ -647,6 +648,30 @@ public class PostControllerTest {
                         .with(SecurityMockMvcRequestPostProcessors.user(user))
                         .header("Authorization", "bearer {AccessToken}"))
                 .andDo(print())
+                .andDo(document("게시글을 수정한다.",
+                        requestHeaders(
+                                headerWithName("Authorization")
+                                        .description("AccessToken")
+                        ),
+                        pathParameters(
+                                parameterWithName("postId")
+                                        .description("게시글 ID")
+                        ),
+                        requestFields(
+                                fieldWithPath("title")
+                                        .description("게시글 제목")
+                                        .type(JsonFieldType.STRING),
+                                fieldWithPath("content")
+                                        .description("게시글 내용(본문)")
+                                        .type(JsonFieldType.STRING),
+                                fieldWithPath("postPassword")
+                                        .description("게시글 비밀번호")
+                                        .type(JsonFieldType.STRING),
+                                fieldWithPath("postSecurity")
+                                        .description("게시글 접근레벨")
+                                        .type(JsonFieldType.STRING)
+                        )
+                ))
                 .andExpect(status().isOk());
 
         final Post post = postRepository.findById(1L).get();
@@ -711,6 +736,15 @@ public class PostControllerTest {
                         .with(SecurityMockMvcRequestPostProcessors.user(user))
                         .header("Authorization", "bearer {AccessToken}"))
                 .andDo(print())
+                .andDo(document("게시글을 삭제한다.",
+                        requestHeaders(
+                                headerWithName("Authorization")
+                                        .description("AccessToken")
+                        ),
+                        pathParameters(
+                                parameterWithName("postId")
+                                        .description("게시글 ID")
+                        )))
                 .andExpect(status().isNoContent());
 
         assertThatThrownBy(() -> postService.findByPostId(1L))
