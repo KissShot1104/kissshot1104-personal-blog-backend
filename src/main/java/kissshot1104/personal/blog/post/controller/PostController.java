@@ -8,8 +8,10 @@ import kissshot1104.personal.blog.member.entity.Member;
 import kissshot1104.personal.blog.post.dto.AuthenticationDataDto;
 import kissshot1104.personal.blog.post.dto.CreatePostDto;
 import kissshot1104.personal.blog.post.dto.FindPostDto;
+import kissshot1104.personal.blog.post.dto.ModifyPostDto;
 import kissshot1104.personal.blog.post.dto.request.AuthenticationDataRequest;
 import kissshot1104.personal.blog.post.dto.request.CreatePostRequest;
+import kissshot1104.personal.blog.post.dto.request.PostModifyRequest;
 import kissshot1104.personal.blog.post.dto.response.FindPostResponse;
 import kissshot1104.personal.blog.post.service.PostService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -56,5 +59,14 @@ public class PostController {
         final Page<FindPostResponse> postResponses = postService.findAllPost(kw, kwType, pageable, member);
         final Page<FindPostDto> findPostDtos = FindPostDto.listOf(postResponses);
         return ResponseEntity.ok(findPostDtos);
+    }
+
+    @PatchMapping("/{postId}")
+    public ResponseEntity<Void> modifyPost(@PathVariable("postId") Long postId,
+                                           @Valid @RequestBody ModifyPostDto modifyPostDto,
+                                           @CurrentMember Member member) {
+        final PostModifyRequest request = modifyPostDto.toPostModifyRequest();
+        postService.modifyPost(postId, request, member);
+        return ResponseEntity.ok().build();
     }
 }
