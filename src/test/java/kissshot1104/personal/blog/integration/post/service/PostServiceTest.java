@@ -3,18 +3,14 @@ package kissshot1104.personal.blog.integration.post.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 
 import jakarta.persistence.EntityManager;
 import java.util.List;
-import java.util.Optional;
 import kissshot1104.personal.blog.category.entity.Category;
 import kissshot1104.personal.blog.category.repository.CategoryRepository;
 import kissshot1104.personal.blog.category.service.CategoryService;
 import kissshot1104.personal.blog.global.exception.AuthException;
 import kissshot1104.personal.blog.global.exception.BusinessException;
-import kissshot1104.personal.blog.global.exception.ErrorCode;
 import kissshot1104.personal.blog.member.entity.Member;
 import kissshot1104.personal.blog.member.repository.MemberRepository;
 import kissshot1104.personal.blog.post.dto.request.AuthenticationDataRequest;
@@ -391,6 +387,36 @@ public class PostServiceTest {
         final Post post = postRepository.findById(1L).get();
         assertThat(post)
                 .extracting("id", "category", "member", "title", "content", "postPassword", "postSecurity")
-                .contains(1L, category1, member1, "modifyTitle1", "modifyContent1", "modifyPostPassword1", PostSecurity.PUBLIC);
+                .contains(1L, category1, member1, "modifyTitle1", "modifyContent1", "modifyPostPassword1",
+                        PostSecurity.PUBLIC);
+    }
+
+
+    @Test
+    @DisplayName("다른 사람의 게시글은 삭제할 수 없다.")
+    public void canNotDeletePostUnless() {
+        assertThatThrownBy(() -> postService.deletePost(1L, member2))
+                .isInstanceOf(AuthException.class)
+                .hasMessage("권한이 없는 사용자입니다.");
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 게시글은 삭제할 수 없다.")
+    public void canNotDeletePost() {
+        assertThatThrownBy(() -> postService.deletePost(9999L, member1))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("지정한 Entity를 찾을 수 없습니다.");
+    }
+
+    @Test
+    @DisplayName("게시글을 삭제한다.")
+    public void deletePostTest() {
+        //when
+        postService.deletePost(1L, member1);
+
+        //then
+        assertThatThrownBy(() -> postService.findByPostId(1L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("지정한 Entity를 찾을 수 없습니다.");
     }
 }
