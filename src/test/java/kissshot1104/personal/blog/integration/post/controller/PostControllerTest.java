@@ -1,10 +1,13 @@
 package kissshot1104.personal.blog.integration.post.controller;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.hasItems;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.patch;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
@@ -16,16 +19,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import java.util.Optional;
 import kissshot1104.personal.blog.category.entity.Category;
 import kissshot1104.personal.blog.category.repository.CategoryRepository;
+import kissshot1104.personal.blog.global.exception.AuthException;
+import kissshot1104.personal.blog.global.exception.BusinessException;
 import kissshot1104.personal.blog.global.security.prinipal.MemberPrincipal;
 import kissshot1104.personal.blog.member.entity.Member;
 import kissshot1104.personal.blog.member.repository.MemberRepository;
 import kissshot1104.personal.blog.post.dto.AuthenticationDataDto;
 import kissshot1104.personal.blog.post.dto.CreatePostDto;
+import kissshot1104.personal.blog.post.dto.request.PostModifyRequest;
 import kissshot1104.personal.blog.post.entity.Post;
 import kissshot1104.personal.blog.post.entity.PostSecurity;
 import kissshot1104.personal.blog.post.repository.PostRepository;
@@ -601,5 +609,96 @@ public class PostControllerTest {
                                 hasItems("content1", "content2", "content3", "content4", "content5")),
                         jsonPath("$.content[*].postSecurity", hasItems("PUBLIC", "PROTECTED", "PRIVATE"))
                 );
+    }
+
+    @Test
+    @DisplayName("다른 사람의 게시글은 수정할 수 없다.")
+    public void canNotModifyPostUnless() throws Exception {
+        final PostModifyRequest postModifyRequest = PostModifyRequest.builder()
+                .title("modifyTitle1")
+                .content("modifyContent1")
+                .postPassword("modifyPostPassword1")
+                .postSecurity("PUBLIC")
+                .build();
+
+        mock.perform(patch("/api/v1/post/{postId}", 1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(postModifyRequest))
+                .with(SecurityMockMvcRequestPostProcessors.user(user2))
+                .header("Authorization", "bearer {AccessToken}"))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpectAll(
+                        jsonPath("$.message").value("권한이 없는 사용자입니다."),
+                        jsonPath("$.code").value("AU_002")
+                );
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 게시글은 수정할 수 없다.")
+    public void canNotModifyPost() throws Exception {
+        final PostModifyRequest postModifyRequest = PostModifyRequest.builder()
+                .title("modifyTitle1")
+                .content("modifyContent1")
+                .postPassword("modifyPostPassword1")
+                .postSecurity("PUBLIC")
+                .build();
+
+        mock.perform(patch("/api/v1/post/{postId}", 9999L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(postModifyRequest))
+                        .with(SecurityMockMvcRequestPostProcessors.user(user))
+                        .header("Authorization", "bearer {AccessToken}"))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpectAll(
+                        jsonPath("$.message").value("지정한 Entity를 찾을 수 없습니다."),
+                        jsonPath("$.code").value("C_001")
+                );
+    }
+//
+//    @Test
+//    @DisplayName("게시글을 수정한다.")
+//    public void modifyPostTest() {
+//        //given
+//        final PostModifyRequest postModifyRequest = PostModifyRequest.builder()
+//                .title("modifyTitle1")
+//                .content("modifyContent1")
+//                .postPassword("modifyPostPassword1")
+//                .postSecurity("PUBLIC")
+//                .build();
+//
+//        //when
+//        postService.modifyPost(1L, postModifyRequest, member1);
+//
+//        //then
+//        final Post post = postRepository.findById(1L).get();
+//        assertThat(post)
+//                .extracting("id", "category", "member", "title", "content", "postPassword", "postSecurity")
+//                .contains(1L, category1, member1, "modifyTitle1", "modifyContent1", "modifyPostPassword1", PostSecurity.PUBLIC);
+//    }
+
+    @Test
+    @DisplayName("존재하지 않는 게시글은 수정할 수 없다.")
+    public void modifyPostTest() throws Exception {
+        final PostModifyRequest postModifyRequest = PostModifyRequest.builder()
+                .title("modifyTitle1")
+                .content("modifyContent1")
+                .postPassword("modifyPostPassword1")
+                .postSecurity("PUBLIC")
+                .build();
+
+        mock.perform(patch("/api/v1/post/{postId}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(postModifyRequest))
+                        .with(SecurityMockMvcRequestPostProcessors.user(user))
+                        .header("Authorization", "bearer {AccessToken}"))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        final Post post = postRepository.findById(1L).get();
+        assertThat(post)
+                .extracting("id", "category", "member", "title", "content", "postPassword", "postSecurity")
+                .contains(1L, category1, member1, "modifyTitle1", "modifyContent1", "modifyPostPassword1", PostSecurity.PUBLIC);
     }
 }
