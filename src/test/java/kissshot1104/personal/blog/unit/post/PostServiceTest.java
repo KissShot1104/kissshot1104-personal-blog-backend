@@ -299,24 +299,4 @@ public class PostServiceTest {
                 .extracting("postId", "category", "nickName", "title", "content", "postSecurity")
                 .contains(3L, "category3", "nickName1", "title3", "content3", "PRIVATE");
     }
-
-//    @Test
-//    @DisplayName("다른 사람의 게시글은 수정할 수 없다.")
-//    public void canNotModifyPostUnless() {
-//        final PostModifyRequest postModifyRequest = PostModifyRequest.builder()
-//                .title("modifyTitle1")
-//                .content("modifyContent1")
-//                .postPassword("modifyPostPassword1")
-//                .postSecurity("PUBLIC")
-//                .build();
-//        given(postRepository.findById(any()))
-//                .willReturn(Optional.of(publicPost1));
-//
-//        given(memberService.checkAuthorizedMember(publicPost1.getMember(), member2))
-//                .willThrow(new AuthException(ErrorCode.UNAUTHORIZED_USER));
-//
-//        assertThatThrownBy(() -> postService.modifyPost(1L, postModifyRequest, member2))
-//                .isInstanceOf(AuthException.class)
-//                .hasMessage("권한이 없는 사용자입니다.");
-//    }
 }
