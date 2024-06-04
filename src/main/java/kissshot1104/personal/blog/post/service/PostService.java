@@ -7,8 +7,11 @@ import kissshot1104.personal.blog.global.exception.AuthException;
 import kissshot1104.personal.blog.global.exception.BusinessException;
 import kissshot1104.personal.blog.global.exception.ErrorCode;
 import kissshot1104.personal.blog.member.entity.Member;
+import kissshot1104.personal.blog.member.repository.MemberRepository;
+import kissshot1104.personal.blog.member.service.MemberService;
 import kissshot1104.personal.blog.post.dto.request.AuthenticationDataRequest;
 import kissshot1104.personal.blog.post.dto.request.CreatePostRequest;
+import kissshot1104.personal.blog.post.dto.request.PostModifyRequest;
 import kissshot1104.personal.blog.post.dto.response.FindPostResponse;
 import kissshot1104.personal.blog.post.entity.Post;
 import kissshot1104.personal.blog.post.entity.PostSecurity;
@@ -25,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PostService {
     private final PostRepository postRepository;
     private final CategoryService categoryService;
+    private final MemberService memberService;
 
     @Transactional
     public Long createPost(final CreatePostRequest createPostRequest, final Member member) {
@@ -76,5 +80,14 @@ public class PostService {
                                               final Member member) {
         final Page<FindPostResponse> responses = postRepository.findAllByKeyword(kw, kwType, pageable, member);
         return responses;
+    }
+
+    @Transactional
+    public void modifyPost(final Long postId,
+                           final PostModifyRequest request,
+                           final Member member) {
+        final Post post = findByPostId(postId);
+        memberService.checkAuthorizedMember(post.getMember(), member);
+        post.modifyPost(request);
     }
 }
