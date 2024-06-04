@@ -13,6 +13,7 @@ import jakarta.persistence.ManyToOne;
 import kissshot1104.personal.blog.category.entity.Category;
 import kissshot1104.personal.blog.global.BaseEntity;
 import kissshot1104.personal.blog.member.entity.Member;
+import kissshot1104.personal.blog.post.dto.request.PostModifyRequest;
 import kissshot1104.personal.blog.post_image.entity.PostImage;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -50,4 +51,11 @@ public class Post extends BaseEntity {
     @Enumerated(value = EnumType.STRING)
     @Column(nullable = false)
     private PostSecurity postSecurity;
+
+    public void modifyPost(final PostModifyRequest postModifyRequest) {
+        this.title = postModifyRequest.title();
+        this.content = postModifyRequest.content();
+        this.postPassword = postModifyRequest.postPassword();
+        this.postSecurity = PostSecurity.checkPostSecurity(postModifyRequest.postSecurity());
+    }
 }
