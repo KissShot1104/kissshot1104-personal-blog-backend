@@ -1,4 +1,4 @@
-package kissshot1104.personal.blog.post_image.config;
+package kissshot1104.personal.blog.global.config;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
