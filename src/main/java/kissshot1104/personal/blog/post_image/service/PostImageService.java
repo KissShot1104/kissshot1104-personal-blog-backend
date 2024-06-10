@@ -9,6 +9,7 @@ import java.net.URL;
 import java.util.UUID;
 import kissshot1104.personal.blog.global.exception.BusinessException;
 import kissshot1104.personal.blog.global.exception.ErrorCode;
+import kissshot1104.personal.blog.global.util.s3.S3ImageUploader;
 import kissshot1104.personal.blog.member.entity.Member;
 import kissshot1104.personal.blog.post_image.entity.PostImage;
 import kissshot1104.personal.blog.post_image.repository.PostImageRepository;
@@ -21,10 +22,8 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class PostImageService {
 
-    private final AmazonS3 s3Client;
+    private final S3ImageUploader s3ImageUploader;
     private final PostImageRepository postImageRepository;
-    @Value("${application.bucket.name}")
-    private String bucketName;
 
     public String savePostImage(final MultipartFile image, final Member member) {
 
@@ -33,9 +32,8 @@ public class PostImageService {
         String filename = UUID.randomUUID() + "_" + originalFilename;
 
         // S3에 파일 업로드
-        uploadImage(image, filename);
-
-        URL imagePath = s3Client.getUrl(bucketName, filename);
+        s3ImageUploader.uploadImage(image, filename);
+        final URL imagePath = s3ImageUploader.getImageUrl(filename);
         //todo imagePath null체크 해야하는가?
         final PostImage postImage = PostImage.builder()
                 .member(member)
@@ -44,18 +42,6 @@ public class PostImageService {
 
         postImageRepository.save(postImage);
         return postImage.getImagePath();
-    }
-
-    private void uploadImage(final MultipartFile image, final String filename) {
-        try {
-            InputStream fileInputStream = image.getInputStream();
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentLength(image.getSize());
-            s3Client.putObject(new PutObjectRequest(bucketName, filename, fileInputStream, metadata));
-            fileInputStream.close();
-        } catch (IOException io) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
-        }
     }
 }
 
