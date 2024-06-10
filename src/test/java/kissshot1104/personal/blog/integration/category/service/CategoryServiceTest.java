@@ -1,4 +1,4 @@
-package kissshot1104.personal.blog.integration.service;
+package kissshot1104.personal.blog.integration.category.service;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,7 +20,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.core.parameters.P;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -136,7 +135,7 @@ class CategoryServiceTest {
         final List<ModifyCategoryRequest> modifyCategoryRequests =
                 List.of(modifyCategoryRequest1, modifyCategoryRequest2, modifyCategoryRequest3, modifyCategoryRequest4);
 
-        categoryService.saveCategoryChanges(modifyCategoryRequests, new Member());
+        categoryService.saveCategoryChanges(modifyCategoryRequests, Member.builder().build());
         final Category result = categoryService.findByCategoryId(4L);
         assertThat(result)
                 .extracting("id", "category", "categoryName", "categoryDepth")
