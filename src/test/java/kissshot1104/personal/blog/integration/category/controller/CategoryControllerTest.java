@@ -107,6 +107,7 @@ class CategoryControllerTest {
         member = Member.builder()
                 .username("username")
                 .password(passwordEncoder.encode("1"))
+                .nickName("nickname")
                 .build();
         memberRepository.save(member);
         user = memberPrincipal.loadUserByUsername("username");
